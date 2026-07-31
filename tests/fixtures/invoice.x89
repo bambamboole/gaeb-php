@@ -1,36 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA86/3.3">
+<GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA89/3.3">
   <GAEBInfo>
     <Version>3.3</Version>
     <VersDate>2021-05</VersDate>
-    <Date>2026-06-15</Date>
+    <Date>2026-10-31</Date>
     <ProgName>Fable Sample Suite 1.0</ProgName>
   </GAEBInfo>
   <PrjInfo>
     <NamePrj>Musterprojekt Lagerhalle Nord</NamePrj>
-    <LblPrj>Neubau Lagerhalle Nord - Auftragserteilung</LblPrj>
+    <LblPrj>Neubau Lagerhalle Nord - Abschlagsrechnung</LblPrj>
   </PrjInfo>
-  <Award>
-    <DP>86</DP>
-    <AwardInfo>
-      <Cur>EUR</Cur>
-      <BidDate>2026-05-04</BidDate>
-      <CnstStart>2026-09-01</CnstStart>
-      <CnstEnd>2027-03-31</CnstEnd>
-      <ContrNo>A-2026-042</ContrNo>
-      <ContrDate>2026-06-15</ContrDate>
-      <WarrDur>5</WarrDur>
-      <WarrUnit>Years</WarrUnit>
-      <WarrEnd>2032-03-31</WarrEnd>
-    </AwardInfo>
+  <Invoice>
+    <DP>89</DP>
     <OWN>
       <Address>
         <Name1>Stadtwerke Musterstadt</Name1>
         <Street>Rathausplatz 1</Street>
         <PCode>12345</PCode>
         <City>Musterstadt</City>
-        <Phone>+49 30 1234560</Phone>
-        <Email>vergabe@stadtwerke-musterstadt.example</Email>
       </Address>
     </OWN>
     <CTR>
@@ -39,14 +26,15 @@
         <Street>Baustrasse 1</Street>
         <PCode>12345</PCode>
         <City>Musterstadt</City>
-        <Phone>+49 30 9876540</Phone>
-        <Email>info@musterbau.example</Email>
       </Address>
     </CTR>
+    <CnstSite>
+      <CnstSiteName>Lagerhalle Nord</CnstSiteName>
+    </CnstSite>
     <BoQ ID="B1">
       <BoQInfo>
         <Name>LV Lagerhalle Nord</Name>
-        <LblBoQ>Lagerhalle Nord - Auftrags-LV</LblBoQ>
+        <LblBoQ>Lagerhalle Nord - Abrechnungs-LV</LblBoQ>
         <OutlCompl>AllTxt</OutlCompl>
         <BoQBkdn>
           <Type>Item</Type>
@@ -54,7 +42,11 @@
           <Num>Yes</Num>
         </BoQBkdn>
         <Totals>
-          <Total>3475.00</Total>
+          <Total>2565.00</Total>
+          <VAT>19.00</VAT>
+          <TotalNet>2565.00</TotalNet>
+          <VATAmount>487.35</VATAmount>
+          <TotalGross>3052.35</TotalGross>
         </Totals>
       </BoQInfo>
       <BoQBody>
@@ -63,10 +55,10 @@
           <BoQBody>
             <Itemlist>
               <Item ID="I0010" RNoPart="0010">
-                <Qty>50.000</Qty>
+                <BillQty>30.000</BillQty>
                 <QU>m3</QU>
-                <UP>45.50</UP>
-                <IT>2275.00</IT>
+                <UP>45.500</UP>
+                <IT>1365.00</IT>
                 <Description>
                   <CompleteText>
                     <DetailTxt>
@@ -79,9 +71,9 @@
                 </Description>
               </Item>
               <Item ID="I0020" RNoPart="0020">
-                <LumpSumItem>Yes</LumpSumItem>
+                <BillQty>1.000</BillQty>
                 <QU>psch</QU>
-                <UP>1200.00</UP>
+                <UP>1200.000</UP>
                 <IT>1200.00</IT>
                 <Description>
                   <CompleteText>
@@ -97,10 +89,48 @@
             </Itemlist>
           </BoQBody>
           <Totals>
-            <Total>3475.00</Total>
+            <Total>2565.00</Total>
           </Totals>
         </BoQCtgy>
       </BoQBody>
     </BoQ>
-  </Award>
+    <InvoiceHeader>
+      <InvoiceNo>RE-2026-007</InvoiceNo>
+      <InvoiceDate>2026-10-31</InvoiceDate>
+      <InvoiceType>deduction</InvoiceType>
+      <SettlementType>accumulated</SettlementType>
+      <SequentialNo>2</SequentialNo>
+      <ServiceProvisionStartDate>2026-09-01</ServiceProvisionStartDate>
+      <ServiceProvisionEndDate>2026-10-31</ServiceProvisionEndDate>
+    </InvoiceHeader>
+    <InvoiceCreator>
+      <Address>
+        <Name1>Musterbau GmbH</Name1>
+        <Street>Baustrasse 1</Street>
+        <PCode>12345</PCode>
+        <City>Musterstadt</City>
+      </Address>
+      <TaxNo>DE123456789</TaxNo>
+    </InvoiceCreator>
+    <InvoiceRecipient>
+      <Address>
+        <Name1>Stadtwerke Musterstadt</Name1>
+        <Street>Rathausplatz 1</Street>
+        <PCode>12345</PCode>
+        <City>Musterstadt</City>
+      </Address>
+    </InvoiceRecipient>
+    <InvoiceShare>
+      <InvoiceShareType>basic amount</InvoiceShareType>
+      <Description>Grundbetrag</Description>
+      <Total>3052.35</Total>
+    </InvoiceShare>
+    <PaymentMade>
+      <TotalVAT>190.00</TotalVAT>
+      <Total>1190.00</Total>
+      <PaymentDate>2026-10-05</PaymentDate>
+      <InvoiceNo>RE-2026-006</InvoiceNo>
+    </PaymentMade>
+    <TotalGross>3052.35</TotalGross>
+  </Invoice>
 </GAEB>

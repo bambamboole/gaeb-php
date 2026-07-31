@@ -6,6 +6,8 @@ use Bambamboole\GaebParser\Driver\GaebXmlDriver;
 use Bambamboole\GaebParser\Dto\GaebFile;
 use Bambamboole\GaebParser\Write\Bid;
 use Bambamboole\GaebParser\Write\BidWriter;
+use Bambamboole\GaebParser\Write\Invoice;
+use Bambamboole\GaebParser\Write\InvoiceWriter;
 use Bambamboole\GaebParser\Xml\Dom;
 use Dom\XMLDocument;
 
@@ -65,11 +67,12 @@ final class GaebDocument implements \JsonSerializable, \Stringable
     /** @return list<string> schema errors, [] = valid */
     public function validate(?string $xsdDir = null): array
     {
-        $xsdDir ??= dirname(__DIR__).'/docs/gaeb/3.3/2021-05_Leistungsverzeichnis';
         $phase = $this->phase();
-        if ($phase === null || $phase < 80 || $phase > 87) {
+        if ($phase === null || $phase < 80 || $phase === 88 || $phase > 89) {
             return ['Cannot resolve schema for phase: '.var_export($phase, true)];
         }
+        $family = $phase === 89 ? '2021-05_Rechnung' : '2021-05_Leistungsverzeichnis';
+        $xsdDir ??= dirname(__DIR__).'/docs/gaeb/3.3/'.$family;
         $xsd = "{$xsdDir}/GAEB_DA_XML_{$phase}_3.3_2021-05.xsd";
         if (! is_file($xsd)) {
             return ["Schema file not found: {$xsd}"];
@@ -118,5 +121,17 @@ final class GaebDocument implements \JsonSerializable, \Stringable
         }
 
         return self::fromDom((new BidWriter)->write($this->dom, $this->file(), $bid));
+    }
+
+    /** Transforms this X86 contract into a new X89 invoice document. */
+    public function createInvoice(Invoice $invoice): self
+    {
+        $phase = $this->phase();
+        if ($phase !== 86) {
+            $got = $phase === null ? 'none' : "X{$phase}";
+            throw new GaebWriteException("createInvoice requires an X86 source, got {$got}");
+        }
+
+        return self::fromDom((new InvoiceWriter)->write($this->dom, $this->file(), $invoice));
     }
 }

@@ -14,12 +14,19 @@ all project names, texts, and numbers are invented for this test suite.
 parties, `AwardInfo` contract/bid/construction/warranty data, and the
 awarded BoQ, all self-authored and schema-valid.
 
+`invoice.x89` is a synthetic X89 cumulative progress invoice (Abschlagsrechnung)
+hand-authored to match `contract.x86`'s project and BoQ (not derived from it,
+and not writer output), demonstrating the read path with a known money
+chain: 2565.00 net / 487.35 VAT (19%) / 3052.35 gross total; self-authored
+and schema-valid.
+
 ## Schema validity
 
-`minimal.x83`, `boq.x83`, `priced.x84`, `realistic.x84`, and
-`contract.x86` are valid against the official GAEB 3.3 XSDs
+`minimal.x83`, `boq.x83`, `priced.x84`, `realistic.x84`, `contract.x86`,
+and `invoice.x89` are valid against the official GAEB 3.3 XSDs
 (`GAEB_DA_XML_83_3.3_2021-05.xsd` / `GAEB_DA_XML_84_3.3_2021-05.xsd` /
-`GAEB_DA_XML_86_3.3_2021-05.xsd`). `tests/fixtures/nonconforming.x83` is
+`GAEB_DA_XML_86_3.3_2021-05.xsd` / `GAEB_DA_XML_89_3.3_2021-05.xsd`).
+`tests/fixtures/nonconforming.x83` is
 **intentionally invalid** — it drops required elements/attributes (no
 `VersDate`, `PrjInfo/Name` instead of `NamePrj`, `BoQInfo/LblBoQ` without
 `Name`, no `ID` attributes, an item without `Description`) to exercise the

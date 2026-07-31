@@ -25,5 +25,6 @@ final readonly class Item
         public ?string $bidderComment,
         /** @var list<SubDescription> */
         public array $subDescriptions,
+        public ?float $billedQty,
     ) {}
 }
