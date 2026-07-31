@@ -12,7 +12,8 @@ elements simply become `null` instead of throwing. Writing is strict — see
 composer require bambamboole/gaeb-parser
 ```
 
-Requires PHP `^8.4` and the `ext-dom` extension (usually bundled). No other
+Requires PHP `^8.4` and the `ext-dom` extension (usually bundled) plus
+`brick/math` for decimal-exact money handling in the write path. No other
 runtime dependencies.
 
 ## Usage
@@ -95,7 +96,7 @@ $bid = new Bid($contractor, currency: 'EUR', date: '2026-07-31');
 // currency defaults to the source's currency, date defaults to today —
 // pass both explicitly for a byte-deterministic output.
 
-$bid->setUnitPrice('01.02.0010', 12.50)
+$bid->setUnitPrice('01.02.0010', '12.50')   // decimal strings are exact, floats convenient
     ->fillGap('01.02.0010', 1, 'Musterhersteller GmbH')
     ->setComment('01.02.0010', 'Lieferzeit 4 Wochen');
 // ...one setUnitPrice() per priceable item (every item that isn't marked

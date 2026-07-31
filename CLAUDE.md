@@ -8,8 +8,8 @@ exists so they can be added later.
 
 ## Hard invariants (never break without approval)
 
-- **Zero runtime dependencies beyond `ext-dom`.** Never add a composer
-  runtime dependency.
+- **Runtime dependencies: `ext-dom` and `brick/math` ONLY.** Never add
+  another composer runtime dependency without approval.
 - **Lenient parsing contract:** `GaebParseException` is thrown ONLY for
   unreadable files, unparseable/unrecognized input, or a missing `<GAEB>`
   root. Every missing or optional element yields `null` (or an empty
@@ -59,7 +59,13 @@ exists so they can be added later.
 - `src/Xml/Dom.php` (`@internal`) holds the shared DOM helpers (`child`,
   `children`, `text`, `floatVal`, `intVal`, `flatten`, `hasAncestorP`);
   `GaebXmlDriver` and `BidWriter` both use it — never duplicate
-  DOM-walking helpers.
+  DOM-walking helpers. XML internals use PHP 8.4's native `Dom\` API
+  (`Dom\XMLDocument`); direct-child element lookups via `Dom::child()`
+  (`:scope` selectors unsupported on the native API).
+- Money in the write path is decimal-exact via `brick/math`: `BigDecimal`,
+  `RoundingMode::HalfUp`, scale 3 for unit prices, scale 2 for item totals
+  and final sums. Garbage source quantities throw `GaebWriteException` at
+  write time.
 
 ## Verification
 

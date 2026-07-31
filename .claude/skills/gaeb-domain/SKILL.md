@@ -187,7 +187,10 @@ source X81/X83 DOM (`src/Write/BidWriter.php`, `@internal`) — derived from
 source, never mutating it: `ID` and `RNoPart` are copied verbatim from the
 source; `Qty` is re-emitted, normalized to 3 decimals
 (`number_format($qty, 3, '.', '')`), not copied verbatim. The `Bid` only
-supplies what changed: `UP`, filled `TextComplement`s, `BidComm`.
+supplies what changed: `UP`, filled `TextComplement`s, `BidComm`. Money is
+decimal-exact via `brick/math` (`BigDecimal`, `RoundingMode::HalfUp`, scale 3
+for unit prices, scale 2 for item totals and sums); garbage source quantities
+throw `GaebWriteException` at write time.
 
 Schema findings from the X84 + Lib XSDs (verified with xmllint, re-confirmed
 against `priced.x84`/`realistic.x84` while implementing the writer):
