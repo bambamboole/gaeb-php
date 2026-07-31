@@ -15,6 +15,10 @@ it('throws on unreadable or invalid input', function () {
     GaebDocument::open(__DIR__.'/fixtures/nope.x83');
 })->throws(GaebParseException::class);
 
+it('throws GaebParseException instead of leaking ValueError on empty input', function () {
+    GaebDocument::fromString('');
+})->throws(GaebParseException::class, 'Invalid XML');
+
 it('round-trips to string byte-identically', function () {
     $content = file_get_contents(__DIR__.'/fixtures/boq.x83');
 

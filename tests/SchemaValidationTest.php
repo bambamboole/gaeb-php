@@ -1,4 +1,5 @@
 <?php declare(strict_types=1);
+use Dom\XMLDocument;
 
 $xsdDir = getenv('GAEB_XSD_DIR') ?: __DIR__.'/../docs/gaeb/3.3/2021-05_Leistungsverzeichnis';
 
@@ -15,8 +16,7 @@ foreach ($fixtures as $fixture => $xsd) {
             $this->markTestSkipped('GAEB XSDs not available (set GAEB_XSD_DIR or place them in docs/gaeb/)');
         }
 
-        $doc = new DOMDocument;
-        $doc->load(__DIR__.'/fixtures/'.$fixture);
+        $doc = XMLDocument::createFromFile(__DIR__.'/fixtures/'.$fixture);
 
         $previous = libxml_use_internal_errors(true);
         $valid = $doc->schemaValidate($xsdDir.'/'.$xsd);

@@ -12,8 +12,10 @@ elements simply become `null` instead of throwing. Writing is strict — see
 composer require bambamboole/gaeb-parser
 ```
 
-Requires PHP `^8.4` and the `ext-dom` extension (usually bundled). No other
+Requires PHP `^8.4` and the `ext-dom` extension (usually bundled) plus
+`brick/math` for decimal-exact money handling in the write path. No other
 runtime dependencies.
+Built on PHP 8.4's native `Dom\XMLDocument` API for lightweight XML processing.
 
 ## Usage
 
@@ -34,7 +36,8 @@ currency. `$gaeb->boq` is `null` when the file has no bill of quantities;
 otherwise it holds the BoQ label/currency/totals plus the top-level
 category/item tree, and `allItems()` lazily yields every `Item` depth-first
 with its full position number (`rNo`, e.g. `01.02.0030`) resolved. An item's
-`descriptionXml` holds the raw XML (the serialized `Description` element).
+`descriptionXml` holds the raw XML (the serialized `Description` element,
+self-contained with its own `xmlns="…"` declaration).
 
 ## Item classification & totals
 
@@ -95,7 +98,7 @@ $bid = new Bid($contractor, currency: 'EUR', date: '2026-07-31');
 // currency defaults to the source's currency, date defaults to today —
 // pass both explicitly for a byte-deterministic output.
 
-$bid->setUnitPrice('01.02.0010', 12.50)
+$bid->setUnitPrice('01.02.0010', '12.50')   // decimal strings are exact, floats convenient
     ->fillGap('01.02.0010', 1, 'Musterhersteller GmbH')
     ->setComment('01.02.0010', 'Lieferzeit 4 Wochen');
 // ...one setUnitPrice() per priceable item (every item that isn't marked

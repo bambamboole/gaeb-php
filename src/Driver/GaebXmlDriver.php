@@ -15,6 +15,8 @@ use Bambamboole\GaebParser\Dto\TextComplementKind;
 use Bambamboole\GaebParser\Dto\Totals;
 use Bambamboole\GaebParser\GaebParseException;
 use Bambamboole\GaebParser\Xml\Dom;
+use Dom\Element;
+use Dom\XMLDocument;
 
 final class GaebXmlDriver implements Driver
 {
@@ -29,13 +31,9 @@ final class GaebXmlDriver implements Driver
 
     public function parse(string $content): GaebFile
     {
-        $doc = new \DOMDocument;
-        $previous = libxml_use_internal_errors(true);
-        $loaded = $doc->loadXML($content);
-        libxml_clear_errors();
-        libxml_use_internal_errors($previous);
-
-        if (! $loaded) {
+        try {
+            $doc = Dom::parse($content);
+        } catch (\DOMException|\ValueError) {
             throw new GaebParseException('Invalid XML');
         }
 
@@ -53,7 +51,7 @@ final class GaebXmlDriver implements Driver
         );
     }
 
-    private static function parseInfo(\DOMElement $root): GaebInfo
+    private static function parseInfo(Element $root): GaebInfo
     {
         $info = Dom::child($root, 'GAEBInfo');
         $award = Dom::child($root, 'Award');
@@ -74,7 +72,7 @@ final class GaebXmlDriver implements Driver
         );
     }
 
-    private static function parseProject(\DOMElement $root, ?\DOMElement $award): ProjectInfo
+    private static function parseProject(Element $root, ?Element $award): ProjectInfo
     {
         $prj = Dom::child($root, 'PrjInfo');
         $awardInfo = $award !== null ? Dom::child($award, 'AwardInfo') : null;
@@ -87,7 +85,7 @@ final class GaebXmlDriver implements Driver
         );
     }
 
-    private static function parseBoQ(\DOMElement $award): ?BoQ
+    private static function parseBoQ(Element $award): ?BoQ
     {
         $boq = Dom::child($award, 'BoQ');
         if ($boq === null) {
@@ -126,7 +124,7 @@ final class GaebXmlDriver implements Driver
      * @param  list<string>  $prefix
      * @return array{list<BoQCategory>, list<Item>}
      */
-    private static function parseBody(\DOMElement $body, array $prefix): array
+    private static function parseBody(Element $body, array $prefix): array
     {
         $categories = [];
         foreach (Dom::children($body, 'BoQCtgy') as $ctgy) {
@@ -146,9 +144,9 @@ final class GaebXmlDriver implements Driver
     /**
      * @param  list<string>  $prefix
      */
-    private static function parseCategory(\DOMElement $ctgy, array $prefix): BoQCategory
+    private static function parseCategory(Element $ctgy, array $prefix): BoQCategory
     {
-        $rNoPart = $ctgy->getAttribute('RNoPart');
+        $rNoPart = Dom::attr($ctgy, 'RNoPart');
         $body = Dom::child($ctgy, 'BoQBody');
         [$categories, $items] = $body !== null
             ? self::parseBody($body, [...$prefix, $rNoPart])
@@ -163,10 +161,10 @@ final class GaebXmlDriver implements Driver
     }
 
     /** @param list<string> $prefix */
-    private static function parseItem(\DOMElement $item, array $prefix): Item
+    private static function parseItem(Element $item, array $prefix): Item
     {
-        $rNoPart = $item->getAttribute('RNoPart');
-        $rNoIndex = $item->getAttribute('RNoIndex');
+        $rNoPart = Dom::attr($item, 'RNoPart');
+        $rNoIndex = Dom::attr($item, 'RNoIndex');
         $rNoSegment = $rNoIndex !== '' ? "{$rNoPart}.{$rNoIndex}" : $rNoPart;
         $description = Dom::child($item, 'Description');
         [$shortText, $longText, $descriptionXml] = self::extractDescriptionTexts($description);
@@ -194,7 +192,7 @@ final class GaebXmlDriver implements Driver
     }
 
     /** @return array{?string, ?string, ?string} shortText, longText, descriptionXml */
-    private static function extractDescriptionTexts(?\DOMElement $description): array
+    private static function extractDescriptionTexts(?Element $description): array
     {
         if ($description === null) {
             return [null, null, null];
@@ -203,28 +201,31 @@ final class GaebXmlDriver implements Driver
         $shortText = null;
         $longText = null;
         if ($complete !== null) {
-            $outline = $complete->getElementsByTagNameNS('*', 'TextOutlTxt');
+            $outline = $complete->querySelectorAll('TextOutlTxt');
             $shortText = $outline->length > 0 ? Dom::flatten($outline->item(0)) : null;
-            $detail = $complete->getElementsByTagNameNS('*', 'DetailTxt');
+            $detail = $complete->querySelectorAll('DetailTxt');
             $longText = $detail->length > 0 ? Dom::flatten($detail->item(0)) : null;
         }
 
-        return [$shortText, $longText, $description->ownerDocument?->saveXML($description) ?: null];
+        $owner = $description->ownerDocument;
+        $descriptionXml = $owner instanceof XMLDocument ? ($owner->saveXml($description) ?: null) : null;
+
+        return [$shortText, $longText, $descriptionXml];
     }
 
     /** @return list<TextComplement> */
-    private static function parseTextComplements(?\DOMElement $description): array
+    private static function parseTextComplements(?Element $description): array
     {
         if ($description === null) {
             return [];
         }
         $complements = [];
-        foreach ($description->getElementsByTagNameNS('*', 'TextComplement') as $node) {
-            $kind = TextComplementKind::tryFrom($node->getAttribute('Kind'));
+        foreach ($description->querySelectorAll('TextComplement') as $node) {
+            $kind = TextComplementKind::tryFrom(Dom::attr($node, 'Kind'));
             if ($kind === null) {
                 continue;
             }
-            $markLabel = $node->getAttribute('MarkLbl');
+            $markLabel = Dom::attr($node, 'MarkLbl');
             $complements[] = new TextComplement(
                 markLabel: ctype_digit($markLabel) ? (int) $markLabel : 0,
                 kind: $kind,
@@ -237,7 +238,7 @@ final class GaebXmlDriver implements Driver
         return $complements;
     }
 
-    private static function parseBidderComment(\DOMElement $item): ?string
+    private static function parseBidderComment(Element $item): ?string
     {
         $comments = [];
         foreach (Dom::children($item, 'BidComm') as $comm) {
@@ -251,7 +252,7 @@ final class GaebXmlDriver implements Driver
     }
 
     /** @return list<SubDescription> */
-    private static function parseSubDescriptions(\DOMElement $item): array
+    private static function parseSubDescriptions(Element $item): array
     {
         $subs = [];
         foreach (Dom::children($item, 'SubDescr') as $sub) {
