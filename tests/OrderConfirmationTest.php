@@ -26,7 +26,7 @@ it('preserves the contract content in the confirmation', function () {
     expect($gaeb->owner->name)->toBe('Stadtwerke Musterstadt')
         ->and($gaeb->contractor->name)->toBe('Musterbau GmbH')
         ->and($gaeb->award->contractNo)->toBe('A-2026-042')
-        ->and($gaeb->boq->totals->total)->toBe(3475.00)
+        ->and($gaeb->boq->totals->total)->toBeDecimal(3475.00)
         ->and(iterator_to_array($gaeb->boq->allItems(), false))->toHaveCount(2);
 });
 

@@ -154,31 +154,31 @@ final class GaebXmlDriver implements Driver
         foreach (Dom::children($totals, 'VATPart') as $part) {
             $percent = Dom::attr($part, 'VATPcnt');
             $vatParts[] = new VatPart(
-                percent: is_numeric($percent) ? (float) $percent : null,
-                totalNetPart: Dom::floatVal($part, 'TotalNetPart'),
-                vatAmount: Dom::floatVal($part, 'VATAmount'),
+                percent: Dom::toDecimal($percent === '' ? null : $percent),
+                totalNetPart: Dom::decimal($part, 'TotalNetPart'),
+                vatAmount: Dom::decimal($part, 'VATAmount'),
             );
         }
 
         $netUpComponents = [];
         $netUpComp = Dom::child($totals, 'TotalNetUpComp');
         for ($i = 1; $netUpComp !== null && $i <= 6; $i++) {
-            $value = Dom::floatVal($netUpComp, "UpComp{$i}");
+            $value = Dom::decimal($netUpComp, "UpComp{$i}");
             if ($value !== null) {
                 $netUpComponents[$i] = $value;
             }
         }
 
         return new Totals(
-            total: Dom::floatVal($totals, 'Total'),
-            discountPercent: Dom::floatVal($totals, 'DiscountPcnt'),
-            discountAmount: Dom::floatVal($totals, 'DiscountAmt'),
-            totalAfterDiscount: Dom::floatVal($totals, 'TotAfterDisc'),
-            vat: Dom::floatVal($totals, 'VAT'),
-            vatAmount: Dom::floatVal($totals, 'VATAmount'),
-            totalNet: Dom::floatVal($totals, 'TotalNet'),
-            totalGross: Dom::floatVal($totals, 'TotalGross'),
-            totalLumpSum: Dom::floatVal($totals, 'TotalLSUM'),
+            total: Dom::decimal($totals, 'Total'),
+            discountPercent: Dom::decimal($totals, 'DiscountPcnt'),
+            discountAmount: Dom::decimal($totals, 'DiscountAmt'),
+            totalAfterDiscount: Dom::decimal($totals, 'TotAfterDisc'),
+            vat: Dom::decimal($totals, 'VAT'),
+            vatAmount: Dom::decimal($totals, 'VATAmount'),
+            totalNet: Dom::decimal($totals, 'TotalNet'),
+            totalGross: Dom::decimal($totals, 'TotalGross'),
+            totalLumpSum: Dom::decimal($totals, 'TotalLSUM'),
             vatParts: $vatParts,
             netUpComponents: $netUpComponents,
         );
@@ -263,7 +263,7 @@ final class GaebXmlDriver implements Driver
             $refItem = Dom::child($subQty, 'RefItem');
             $subQuantities[] = new MarkupSubQuantity(
                 refItemId: $refItem !== null && Dom::attr($refItem, 'IDRef') !== '' ? Dom::attr($refItem, 'IDRef') : null,
-                qty: Dom::floatVal($subQty, 'SubQty'),
+                qty: Dom::decimal($subQty, 'SubQty'),
             );
         }
 
@@ -276,10 +276,10 @@ final class GaebXmlDriver implements Driver
             markupType: MarkupType::tryFrom((string) Dom::text($markup, 'MarkupType')),
             refItemId: $refRNo !== null && Dom::attr($refRNo, 'IDRef') !== '' ? Dom::attr($refRNo, 'IDRef') : null,
             subQuantities: $subQuantities,
-            markupPercent: Dom::floatVal($markup, 'Markup'),
-            markupTotal: Dom::floatVal($markup, 'ITMarkup'),
-            totalPrice: Dom::floatVal($markup, 'IT'),
-            discountPercent: Dom::floatVal($markup, 'DiscountPcnt'),
+            markupPercent: Dom::decimal($markup, 'Markup'),
+            markupTotal: Dom::decimal($markup, 'ITMarkup'),
+            totalPrice: Dom::decimal($markup, 'IT'),
+            discountPercent: Dom::decimal($markup, 'DiscountPcnt'),
             shortText: $shortText,
             longText: $longText,
             descriptionXml: $descriptionXml,
@@ -332,7 +332,7 @@ final class GaebXmlDriver implements Driver
 
         $upComponents = [];
         for ($i = 1; $i <= 6; $i++) {
-            $value = Dom::floatVal($item, "UPComp{$i}");
+            $value = Dom::decimal($item, "UPComp{$i}");
             if ($value !== null) {
                 $upComponents[$i] = $value;
             }
@@ -341,13 +341,13 @@ final class GaebXmlDriver implements Driver
         return new Item(
             rNo: implode('.', [...$prefix, $rNoSegment]),
             rNoPart: $rNoPart,
-            qty: Dom::floatVal($item, 'Qty'),
+            qty: Dom::decimal($item, 'Qty'),
             unit: Dom::text($item, 'QU'),
             shortText: $shortText,
             longText: $longText,
             descriptionXml: $descriptionXml,
-            unitPrice: Dom::floatVal($item, 'UP'),
-            totalPrice: Dom::floatVal($item, 'IT'),
+            unitPrice: Dom::decimal($item, 'UP'),
+            totalPrice: Dom::decimal($item, 'IT'),
             lumpSum: Dom::text($item, 'LumpSumItem') === 'Yes',
             provisional: Provisional::tryFrom((string) Dom::text($item, 'Provis')),
             hourlyWork: Dom::text($item, 'HourIt') === 'Yes',
@@ -357,13 +357,13 @@ final class GaebXmlDriver implements Driver
             textComplements: self::parseTextComplements($description),
             bidderComment: self::parseBidderComment($item),
             subDescriptions: self::parseSubDescriptions($item),
-            billedQty: Dom::floatVal($item, 'BillQty'),
+            billedQty: Dom::decimal($item, 'BillQty'),
             changeOrderNo: Dom::intVal($item, 'CONo'),
             changeOrderStatus: self::parseChangeOrderStatus($item),
             notOffered: Dom::text($item, 'NotOffered') === 'Yes',
             qtyToBeDetermined: Dom::text($item, 'QtyTBD') === 'Yes',
-            vat: Dom::floatVal($item, 'VAT'),
-            discountPercent: Dom::floatVal($item, 'DiscountPcnt'),
+            vat: Dom::decimal($item, 'VAT'),
+            discountPercent: Dom::decimal($item, 'DiscountPcnt'),
             upComponents: $upComponents,
             id: Dom::attr($item, 'ID') !== '' ? Dom::attr($item, 'ID') : null,
         );
@@ -445,9 +445,9 @@ final class GaebXmlDriver implements Driver
                 shortText: $shortText,
                 longText: $longText,
                 descriptionXml: $descriptionXml,
-                qty: Dom::floatVal($sub, 'Qty'),
+                qty: Dom::decimal($sub, 'Qty'),
                 unit: Dom::text($sub, 'QU'),
-                unitPrice: Dom::floatVal($sub, 'UP'),
+                unitPrice: Dom::decimal($sub, 'UP'),
             );
         }
 
@@ -514,9 +514,9 @@ final class GaebXmlDriver implements Driver
         $payments = [];
         foreach (Dom::children($container, 'PaymentMade') as $payment) {
             $payments[] = new Payment(
-                total: Dom::text($payment, 'Total'),
-                totalVat: Dom::text($payment, 'TotalVAT'),
-                discountAmount: Dom::text($payment, 'DiscountAmt'),
+                total: Dom::decimal($payment, 'Total'),
+                totalVat: Dom::decimal($payment, 'TotalVAT'),
+                discountAmount: Dom::decimal($payment, 'DiscountAmt'),
                 paymentDate: Dom::text($payment, 'PaymentDate'),
                 invoiceNo: Dom::text($payment, 'InvoiceNo'),
                 paymentNo: Dom::text($payment, 'PaymentNo'),
@@ -536,7 +536,7 @@ final class GaebXmlDriver implements Driver
             creator: self::parseParty(Dom::child($container, 'InvoiceCreator')),
             recipient: self::parseParty(Dom::child($container, 'InvoiceRecipient')),
             payments: $payments,
-            totalGross: Dom::floatVal($container, 'TotalGross'),
+            totalGross: Dom::decimal($container, 'TotalGross'),
         );
     }
 }

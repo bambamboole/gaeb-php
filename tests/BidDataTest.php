@@ -86,9 +86,9 @@ it('parses sub-descriptions', function () use ($bidItemXml) {
         ->and($sub->shortText)->toBe('Bogen')
         ->and($sub->longText)->toBe('Zulage Bogen')
         ->and($sub->descriptionXml)->toContain('Zulage Bogen')
-        ->and($sub->qty)->toBe(4.0)
+        ->and($sub->qty)->toBeDecimal(4.0)
         ->and($sub->unit)->toBe('St')
-        ->and($sub->unitPrice)->toBe(12.50);
+        ->and($sub->unitPrice)->toBeDecimal(12.50);
 });
 
 it('defaults bid fields to empty on plain items', function () use ($bidItemXml) {

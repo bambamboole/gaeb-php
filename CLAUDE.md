@@ -78,10 +78,14 @@ exists so they can be added later.
   DOM-walking helpers. XML internals use PHP 8.4's native `Dom\` API
   (`Dom\XMLDocument`); direct-child element lookups via `Xml\Dom::child()`
   (`:scope` selectors unsupported on the native API).
-- Money in the write path is decimal-exact via `brick/math`: `BigDecimal`,
-  `RoundingMode::HalfUp`, scale 3 for unit prices, scale 2 for item totals
-  and final sums. Garbage source quantities throw `GaebWriteException` at
-  write time.
+- Money and quantities are decimal-exact via `brick/math` across the WHOLE
+  model: every read-model money/qty field is `?BigDecimal` (never float —
+  `Dom::decimal()` parses leniently, garbage numeric content yields `null`),
+  and the write path computes with `RoundingMode::HalfUp`, scale 3 for unit
+  prices, scale 2 for item totals and final sums. A source `Qty` that exists
+  but is non-numeric still throws `GaebWriteException` at write time
+  (lenient read, strict write). `BigDecimal` JSON-serializes as a string
+  (`"45.50"`), so `jsonSerialize()` emits money as strings.
 
 ## Verification
 

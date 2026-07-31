@@ -27,10 +27,10 @@ it('parses UP component labels, remarks, performance descriptions and markup ite
         ->and($subQty->markupType)->toBe(MarkupType::ListedSubQuantities)
         ->and($subQty->subQuantities)->toHaveCount(1)
         ->and($subQty->subQuantities[0]->refItemId)->toBe('I0010')
-        ->and($subQty->subQuantities[0]->qty)->toBe(50.0);
+        ->and($subQty->subQuantities[0]->qty)->toBeDecimal(50.0);
 
     [$digging, $hourly] = $earthworks->items;
-    expect($digging->vat)->toBe(19.0)
+    expect($digging->vat)->toBeDecimal(19.0)
         ->and($digging->id)->toBe('I0010')
         ->and($hourly->qtyToBeDetermined)->toBeTrue()
         ->and($hourly->qty)->toBeNull();
@@ -43,35 +43,35 @@ it('parses UP components, discounts, VAT parts and priced markup items from an x
     $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/components.x84');
     $totals = $gaeb->boq->totals;
 
-    expect($totals->discountPercent)->toBe(3.0)
-        ->and($totals->totalAfterDiscount)->toBe(533.5)
-        ->and($totals->netUpComponents)->toBe([1 => 300.0, 2 => 233.5])
+    expect($totals->discountPercent)->toBeDecimal(3.0)
+        ->and($totals->totalAfterDiscount)->toBeDecimal(533.5)
+        ->and(array_map(strval(...), $totals->netUpComponents))->toBe([1 => '300.00', 2 => '233.50'])
         ->and($totals->vatParts)->toHaveCount(2)
-        ->and($totals->vatParts[0]->percent)->toBe(19.0)
-        ->and($totals->vatParts[0]->totalNetPart)->toBe(433.5)
-        ->and($totals->vatParts[0]->vatAmount)->toBe(82.37)
-        ->and($totals->vatParts[1]->percent)->toBe(7.0)
-        ->and($totals->vatAmount)->toBe(89.37)
-        ->and($totals->totalGross)->toBe(622.87);
+        ->and($totals->vatParts[0]->percent)->toBeDecimal(19.0)
+        ->and($totals->vatParts[0]->totalNetPart)->toBeDecimal(433.5)
+        ->and($totals->vatParts[0]->vatAmount)->toBeDecimal(82.37)
+        ->and($totals->vatParts[1]->percent)->toBeDecimal(7.0)
+        ->and($totals->vatAmount)->toBeDecimal(89.37)
+        ->and($totals->totalGross)->toBeDecimal(622.87);
 
     $category = $gaeb->boq->categories[0];
-    expect($category->totals->total)->toBe(550.0);
+    expect($category->totals->total)->toBeDecimal(550.0);
 
     [$priced, $notOffered] = $category->items;
-    expect($priced->upComponents)->toBe([1 => 30.0, 2 => 20.0])
-        ->and($priced->discountPercent)->toBe(5.0)
-        ->and($priced->unitPrice)->toBe(50.0)
+    expect(array_map(strval(...), $priced->upComponents))->toBe([1 => '30.000', 2 => '20.000'])
+        ->and($priced->discountPercent)->toBeDecimal(5.0)
+        ->and($priced->unitPrice)->toBeDecimal(50.0)
         ->and($notOffered->notOffered)->toBeTrue()
         ->and($notOffered->unitPrice)->toBeNull();
 
     $markup = $category->markupItems[0];
-    expect($markup->markupPercent)->toBe(10.0)
-        ->and($markup->markupTotal)->toBe(50.0)
-        ->and($markup->totalPrice)->toBe(50.0);
+    expect($markup->markupPercent)->toBeDecimal(10.0)
+        ->and($markup->markupTotal)->toBeDecimal(50.0)
+        ->and($markup->totalPrice)->toBeDecimal(50.0);
 });
 
 it('parses category totals from an x86 contract', function () {
     $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/contract.x86');
 
-    expect($gaeb->boq->categories[0]->totals->total)->toBe(3475.0);
+    expect($gaeb->boq->categories[0]->totals->total)->toBeDecimal(3475.0);
 });

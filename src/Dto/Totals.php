@@ -2,21 +2,23 @@
 
 namespace Bambamboole\Gaeb\Dto;
 
+use Brick\Math\BigDecimal;
+
 final readonly class Totals
 {
     public function __construct(
-        public ?float $total,
-        public ?float $discountPercent,
-        public ?float $discountAmount,
-        public ?float $totalAfterDiscount,
-        public ?float $vat,
-        public ?float $vatAmount,
-        public ?float $totalNet,
-        public ?float $totalGross,
-        public ?float $totalLumpSum = null,
+        public ?BigDecimal $total,
+        public ?BigDecimal $discountPercent,
+        public ?BigDecimal $discountAmount,
+        public ?BigDecimal $totalAfterDiscount,
+        public ?BigDecimal $vat,
+        public ?BigDecimal $vatAmount,
+        public ?BigDecimal $totalNet,
+        public ?BigDecimal $totalGross,
+        public ?BigDecimal $totalLumpSum = null,
         /** @var list<VatPart> per-rate VAT breakdown for multi-rate documents */
         public array $vatParts = [],
-        /** @var array<int, float> TotalNetUpComp/UpComp1–6, keyed 1–6 */
+        /** @var array<int, BigDecimal> TotalNetUpComp/UpComp1–6, keyed 1–6 */
         public array $netUpComponents = [],
     ) {}
 }

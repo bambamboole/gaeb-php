@@ -34,7 +34,7 @@ it('parses items with quantities, texts and flags', function () {
 
     expect($first->rNo)->toBe('01.02.0010')
         ->and($first->rNoPart)->toBe('0010')
-        ->and($first->qty)->toBe(100.0)
+        ->and($first->qty)->toBeDecimal(100.0)
         ->and($first->unit)->toBe('m3')
         ->and($first->shortText)->toBe('Boden loesen')
         // longText flattens ALL <p> descendants of DetailTxt, including the
@@ -88,7 +88,7 @@ it('parses bid data on the owner-authored item: text complements and a sub-descr
         ->and($sub->shortText)->toBe('Trockener Boden')
         ->and($sub->longText)->toBe('Trockener Boden je m3.')
         ->and($sub->descriptionXml)->toContain('Trockener Boden je m3.')
-        ->and($sub->qty)->toBe(60.0)
+        ->and($sub->qty)->toBeDecimal(60.0)
         ->and($sub->unit)->toBe('m3')
         // X83's restricted tgSubDescr carries only UPSpec/UPBkdn (yes/no
         // flags), never a real UP element — that only exists in X84's

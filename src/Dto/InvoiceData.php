@@ -2,6 +2,8 @@
 
 namespace Bambamboole\Gaeb\Dto;
 
+use Brick\Math\BigDecimal;
+
 final readonly class InvoiceData
 {
     /** @param list<Payment> $payments */
@@ -17,6 +19,6 @@ final readonly class InvoiceData
         public ?Party $creator,
         public ?Party $recipient,
         public array $payments,
-        public ?float $totalGross,
+        public ?BigDecimal $totalGross,
     ) {}
 }

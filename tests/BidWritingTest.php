@@ -6,6 +6,8 @@ use Bambamboole\Gaeb\GaebDocument;
 use Bambamboole\Gaeb\GaebParser;
 use Bambamboole\Gaeb\GaebWriteException;
 use Bambamboole\Gaeb\Write\Bid;
+use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 
 function makeBid(): Bid
 {
@@ -59,7 +61,7 @@ it('produces a bid the parser reads back with matching structure and prices', fu
     $bidItems = iterator_to_array($parsed->boq->allItems(), false);
     expect(array_map(fn ($i) => $i->rNo, $bidItems))->toBe($sourceRNos);
     foreach ($bidItems as $item) {
-        expect($item->unitPrice)->toBe(10.0);
+        expect($item->unitPrice)->toBeDecimal(10.0);
     }
 });
 
@@ -78,7 +80,7 @@ it('computes the total with classification exclusions', function () {
 
     $parsed = GaebParser::fromString($doc->createBid($bid)->toString());
 
-    expect($parsed->boq->totals->total)->toBe(1360.0);
+    expect($parsed->boq->totals->total)->toBeDecimal(1360.0);
 });
 
 it('round-trips gap fills and comments', function () {
@@ -143,7 +145,7 @@ it('excludes notApplicable items from the bid and its totals', function () {
     $items = iterator_to_array($parsed->boq->allItems(), false);
 
     expect(array_map(fn ($i) => $i->rNo, $items))->toBe(['0010'])
-        ->and($parsed->boq->totals->total)->toBe(15.0);
+        ->and($parsed->boq->totals->total)->toBeDecimal(15.0);
 });
 
 it('writes an explicitly supplied bid date instead of today', function () {
@@ -238,8 +240,10 @@ it('rounds the unit price before computing IT so emitted UP x Qty == IT exactly'
     }
 
     expect($item)->not->toBeNull()
-        ->and($item->unitPrice)->toBe(12.346)
-        ->and(round($item->qty * $item->unitPrice, 2))->toBe($item->totalPrice);
+        ->and($item->unitPrice)->toBeDecimal(12.346)
+        ->and($item->totalPrice)->toBeDecimal(
+            (string) $item->qty->multipliedBy($item->unitPrice)->toScale(2, RoundingMode::HalfUp),
+        );
 });
 
 it('throws when a priced/commented/gap-filled rNo resolves to a notApplicable item', function () {
@@ -533,15 +537,15 @@ it('writes a not-offered item without UP/IT and excludes it from totals', functi
 
     // Inclusion rules read the SOURCE flags — the written X84 does not
     // carry ALNGroupNo/Provis, so the read-back can't provide them.
-    $expectedTotal = 0.0;
+    $expectedTotal = BigDecimal::zero();
     foreach ($doc->file()->boq->allItems() as $srcItem) {
         $includedInTotal = $srcItem->provisional !== Provisional::WithoutTotal
             && ($srcItem->alternativeGroupNo === null || $srcItem->alternativeSerialNo === 1);
         if (! $srcItem->notApplicable && $includedInTotal) {
-            $expectedTotal += $items[$srcItem->rNo]->totalPrice ?? 0.0;
+            $expectedTotal = $expectedTotal->plus($items[$srcItem->rNo]->totalPrice ?? 0);
         }
     }
-    expect($parsed->boq->totals->total)->toBe($expectedTotal);
+    expect($parsed->boq->totals->total)->toBeDecimal((string) $expectedTotal);
 });
 
 it('throws when a position is both priced and marked not offered', function () {

@@ -65,11 +65,11 @@ it('parses a full X89 invoice into the InvoiceData aggregate', function () {
         ->and($gaeb->invoice->creator->taxNo)->toBe('DE123456789')
         ->and($gaeb->invoice->recipient->name)->toBe('Stadtwerke Musterstadt')
         ->and($gaeb->invoice->recipient->taxNo)->toBeNull()
-        ->and($gaeb->invoice->totalGross)->toBe(3052.35);
+        ->and($gaeb->invoice->totalGross)->toBeDecimal(3052.35);
 
     expect($gaeb->invoice->payments)->toHaveCount(1)
-        ->and($gaeb->invoice->payments[0]->total)->toBe('1190.00')
-        ->and($gaeb->invoice->payments[0]->totalVat)->toBe('190.00')
+        ->and($gaeb->invoice->payments[0]->total)->toBeDecimal('1190.00')
+        ->and($gaeb->invoice->payments[0]->totalVat)->toBeDecimal('190.00')
         ->and($gaeb->invoice->payments[0]->discountAmount)->toBeNull()
         ->and($gaeb->invoice->payments[0]->paymentDate)->toBe('2026-10-05')
         ->and($gaeb->invoice->payments[0]->invoiceNo)->toBe('RE-2026-006');
@@ -77,8 +77,8 @@ it('parses a full X89 invoice into the InvoiceData aggregate', function () {
     expect($gaeb->owner->name)->toBe('Stadtwerke Musterstadt')
         ->and($gaeb->contractor->name)->toBe('Musterbau GmbH')
         ->and($gaeb->boq)->not->toBeNull()
-        ->and($gaeb->boq->items[0]->billedQty)->toBe(30.0)
-        ->and($gaeb->boq->items[0]->unitPrice)->toBe(45.5)
+        ->and($gaeb->boq->items[0]->billedQty)->toBeDecimal(30.0)
+        ->and($gaeb->boq->items[0]->unitPrice)->toBeDecimal(45.5)
         ->and($gaeb->award)->toBeNull();
 });
 
@@ -122,14 +122,14 @@ it('parses the invoice.x89 fixture end to end', function () {
         ->and($gaeb->invoice->settlementType)->toBe(SettlementType::Accumulated)
         ->and($gaeb->invoice->creator->taxNo)->toBe('DE123456789')
         ->and($gaeb->invoice->payments)->toHaveCount(1)
-        ->and($gaeb->invoice->totalGross)->toBe(3052.35)
-        ->and($gaeb->boq->totals->total)->toBe(2565.00)
-        ->and($gaeb->boq->totals->totalGross)->toBe(3052.35);
+        ->and($gaeb->invoice->totalGross)->toBeDecimal(3052.35)
+        ->and($gaeb->boq->totals->total)->toBeDecimal(2565.00)
+        ->and($gaeb->boq->totals->totalGross)->toBeDecimal(3052.35);
 
     $items = iterator_to_array($gaeb->boq->allItems(), false);
     expect($items)->toHaveCount(2)
         ->and($items[0]->rNo)->toBe('01.0010')
-        ->and($items[0]->billedQty)->toBe(30.0)
-        ->and($items[0]->totalPrice)->toBe(1365.00)
-        ->and($items[1]->billedQty)->toBe(1.0);
+        ->and($items[0]->billedQty)->toBeDecimal(30.0)
+        ->and($items[0]->totalPrice)->toBeDecimal(1365.00)
+        ->and($items[1]->billedQty)->toBeDecimal(1.0);
 });
