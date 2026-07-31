@@ -9,5 +9,7 @@ final readonly class GaebInfo
         public ?int $phase,
         public ?string $date,
         public ?string $program,
+        /** Raw DP token — usually the phase digits, but e.g. "89B" for a Rechnungsbegründende Unterlage */
+        public ?string $dp = null,
     ) {}
 }

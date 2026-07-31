@@ -68,9 +68,13 @@ final class GaebDocument implements \JsonSerializable, \Stringable
         if ($phase === null || $phase < 80 || $phase === 88 || $phase > 89) {
             return ['Cannot resolve schema for phase: '.var_export($phase, true)];
         }
+        // Prefer the raw DP token — DPs aren't always numeric ("89B") and
+        // each token has its own XSD.
+        $dp = $this->file()->info->dp;
+        $token = $dp !== null && preg_match('/^8\d[A-Z]{0,2}$/', $dp) === 1 ? $dp : (string) $phase;
         $family = $phase === 89 ? '2021-05_Rechnung' : '2021-05_Leistungsverzeichnis';
         $xsdDir ??= dirname(__DIR__).'/docs/gaeb/3.3/'.$family;
-        $xsd = "{$xsdDir}/GAEB_DA_XML_{$phase}_3.3_2021-05.xsd";
+        $xsd = "{$xsdDir}/GAEB_DA_XML_{$token}_3.3_2021-05.xsd";
         if (! is_file($xsd)) {
             return ["Schema file not found: {$xsd}"];
         }
@@ -130,6 +134,60 @@ final class GaebDocument implements \JsonSerializable, \Stringable
         }
 
         return self::fromDom((new InvoiceWriter)->write($this->dom, $this->file(), $invoice));
+    }
+
+    /**
+     * Transforms this X86 contract into a new X89B "Rechnungsbegründende
+     * Unterlage" — the audit attachment accompanying an XRechnung/ZUGFeRD
+     * e-invoice. Same strict billing rules as createInvoice(), but the
+     * commercial data (recipient, shares, payments, TotalGross, invoice
+     * header) is NOT part of the format — it lives in the e-invoice; the
+     * header carries only RefInvoiceNo plus the service period.
+     */
+    public function createSupportingDocument(Invoice $invoice): self
+    {
+        $phase = $this->phase();
+        if ($phase !== 86) {
+            $got = $phase === null ? 'none' : "X{$phase}";
+            throw new GaebWriteException("createSupportingDocument requires an X86 source, got {$got}");
+        }
+
+        $ns = 'http://www.gaeb.de/GAEB_DA_XML/DA89B/3.3';
+        $x89 = (new InvoiceWriter)->write($this->dom, $this->file(), $invoice);
+        $out = XMLDocument::createEmpty();
+        $out->formatOutput = true;
+        $root = $x89->documentElement;
+        \assert($root !== null);
+        $root = Dom::cloneInto($out, $root, $ns);
+        $out->appendChild($root);
+
+        $inv = Dom::child($root, 'Invoice');
+        \assert($inv !== null);
+        $dp = Dom::child($inv, 'DP');
+        \assert($dp !== null);
+        $dp->textContent = '89B';
+
+        foreach (['InvoiceRecipient', 'InvoiceShare', 'PaymentMade', 'TotalGross'] as $name) {
+            foreach (Dom::children($inv, $name) as $el) {
+                $inv->removeChild($el);
+            }
+        }
+
+        $header = $out->createElementNS($ns, 'InvoiceHeader');
+        foreach ([
+            'RefInvoiceNo' => $invoice->invoiceNo,
+            'ServiceProvisionStartDate' => $invoice->servicePeriodStart,
+            'ServiceProvisionEndDate' => $invoice->servicePeriodEnd,
+        ] as $name => $text) {
+            $el = $out->createElementNS($ns, $name);
+            $el->textContent = $text;
+            $header->appendChild($el);
+        }
+        $oldHeader = Dom::child($inv, 'InvoiceHeader');
+        \assert($oldHeader !== null);
+        $inv->replaceChild($header, $oldHeader);
+
+        return self::fromDom($out);
     }
 
     /**

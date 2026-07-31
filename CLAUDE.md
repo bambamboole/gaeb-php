@@ -57,10 +57,16 @@ exists so they can be added later.
   `GaebDocument` — the source is never mutated. Persistence (writing to
   disk) is the caller's concern, not this class's. `createInvoice(Invoice
   $invoice)` runs the X86 → X89 transform the same way (strict, cumulative
-  quantities, exact money); `createOrderConfirmation()` re-stamps an X86 as
+  quantities, exact money); `createSupportingDocument(Invoice $invoice)`
+  produces the X89B e-invoice attachment from the same builder (X89 built
+  via `InvoiceWriter`, then projected into DA89B: DP "89B", commercial
+  elements stripped, header reduced to RefInvoiceNo + service period);
+  `createOrderConfirmation()` re-stamps an X86 as
   an X87 (DA87 namespace, DP 87, fresh GAEBInfo) via `Dom::cloneInto`;
-  `validate()` resolves XSDs per phase family
-  (89 → `2021-05_Rechnung`, everything else → `2021-05_Leistungsverzeichnis`).
+  `validate()` resolves XSDs per DP token and phase family
+  (89/89B → `2021-05_Rechnung`, everything else →
+  `2021-05_Leistungsverzeichnis`). DP tokens aren't always numeric
+  (`89B`) — `GaebInfo->dp` carries the raw token, `phase` its digits.
 - `src/Write/Bid.php` is the mutable bid builder (prices/gap
   fills/comments keyed by `rNo`); `src/Write/BidWriter.php` (`@internal`)
   builds the X84 DOM from the source DOM plus the parsed `GaebFile`; the
@@ -104,10 +110,10 @@ exists so they can be added later.
   commit a third-party GAEB file unless the redistribution license chain
   terminates at the copyright holder — an MIT-licensed repo containing
   someone else's file grants nothing.
-- The eleven standard fixtures (`description.x80`, `minimal.x83`, `boq.x83`,
+- The twelve standard fixtures (`description.x80`, `minimal.x83`, `boq.x83`,
   `markup.x83`, `priced.x84`, `components.x84`, `realistic.x84`,
   `contract.x86`, `nachtrag.x86`,
-  `confirmation.x87`, `invoice.x89`) must validate against the
+  `confirmation.x87`, `invoice.x89`, `supporting.x89b`) must validate against the
   official GAEB 3.3 XSDs when they're available — they span two XSD family
   dirs (`2021-05_Leistungsverzeichnis/` for X80–X87, `2021-05_Rechnung/` for
   X89): `tests/SchemaValidationTest.php` runs `Dom\XMLDocument::schemaValidate()`

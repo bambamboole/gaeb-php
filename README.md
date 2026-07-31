@@ -196,6 +196,28 @@ Reading X89 files works through the same parser: `$gaeb->invoice` carries the
 header, parties (with tax number), payments and gross total; billed items
 appear in the BoQ with `Item->billedQty`.
 
+## E-invoice attachment (X86 → X89B)
+
+Under Germany's e-invoicing mandate the commercial invoice travels as
+XRechnung/ZUGFeRD — the GAEB X89B ("Rechnungsbegründende Unterlage") is the
+audit attachment carrying the billed LV alongside it. It applies the same
+strict billing rules as `createInvoice()` (cumulative quantities, Nachtrag
+approval, exact money), but by design carries **no** commercial data: no
+recipient, shares, payments, or invoice-level `TotalGross` — those live in
+the e-invoice. Its header holds only `RefInvoiceNo` (the e-invoice's number,
+taken from `Invoice::$invoiceNo`) and the service period, so the same
+`Invoice` builder produces both documents:
+
+```php
+$contract = GaebDocument::fromString(file_get_contents('contract.x86'));
+$x89  = $contract->createInvoice($invoice);            // the full GAEB invoice
+$x89b = $contract->createSupportingDocument($invoice); // the e-invoice attachment
+$x89b->validate();  // [] — against the bundled X89B XSD
+```
+
+Payments and invoice type/date on the `Invoice` are used by the X89 twin and
+simply have no representation in the X89B.
+
 ## Confirming an order (X86 → X87)
 
 The contractor's order confirmation is a re-stamp of the received contract —
@@ -211,9 +233,9 @@ Together with `createBid()` and `createInvoice()` this closes the contractor
 workflow: bid (X84) → confirm (X87) → invoice (X89).
 
 `GaebDocument::validate(?string $xsdDir = null): array` schema-checks the
-document against the XSDs bundled in the package, resolved per phase family
-under `docs/gaeb/3.3/` — `2021-05_Leistungsverzeichnis/` for X80–X87,
-`2021-05_Rechnung/` for X89; pass `$xsdDir` to validate against a different
+document against the XSDs bundled in the package, resolved per DP token and
+phase family under `docs/gaeb/3.3/` — `2021-05_Leistungsverzeichnis/` for
+X80–X87, `2021-05_Rechnung/` for X89/X89B; pass `$xsdDir` to validate against a different
 XSD set instead. An empty array means valid; otherwise it's the flattened
 list of libxml error strings.
 
@@ -238,9 +260,9 @@ to add support for another format without touching this library.
 
 ## Out of scope
 
-- Writing formats other than the X84 bid, X87 confirmation, and X89 invoice
-  transforms above: from-scratch X81/X83 authoring, X86 award/rejection
-  writing, X89B payment approval
+- Writing formats other than the X84 bid, X87 confirmation, X89 invoice,
+  and X89B attachment transforms above: from-scratch X81/X83 authoring,
+  X86 award/rejection writing
 - Multiple `InvoiceShare`s (only a single `basic amount` share is emitted),
   `COInfo`/Nachträge, cash-discount `Terms` when writing invoices
 - Per-item `VAT`, `UPComp1–6` price components, sub-description prices,

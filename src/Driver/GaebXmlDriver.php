@@ -78,10 +78,11 @@ final class GaebXmlDriver implements Driver
 
         $phase = null;
         $dp = $container !== null ? Dom::text($container, 'DP') : null;
-        if ($dp !== null && ctype_digit($dp)) {
-            $phase = (int) $dp;
-        } elseif (preg_match('~/DA(8\d)/~', (string) $root->namespaceURI, $m) === 1) {
+        if ($dp !== null && preg_match('/^(8\d)[A-Z]{0,2}$/', $dp, $m) === 1) {
             $phase = (int) $m[1];
+        } elseif (preg_match('~/DA(8\d[A-Z]{0,2})/~', (string) $root->namespaceURI, $m) === 1) {
+            $dp ??= $m[1];
+            $phase = (int) substr($m[1], 0, 2);
         }
 
         return new GaebInfo(
@@ -89,6 +90,7 @@ final class GaebXmlDriver implements Driver
             phase: $phase,
             date: $info !== null ? Dom::text($info, 'Date') : null,
             program: $info !== null ? (Dom::text($info, 'ProgSystem') ?? Dom::text($info, 'ProgName')) : null,
+            dp: $dp,
         );
     }
 
@@ -525,7 +527,8 @@ final class GaebXmlDriver implements Driver
         }
 
         return new InvoiceData(
-            invoiceNo: Dom::text($header, 'InvoiceNo'),
+            // X89B carries RefInvoiceNo (the accompanying e-invoice's number)
+            invoiceNo: Dom::text($header, 'InvoiceNo') ?? Dom::text($header, 'RefInvoiceNo'),
             invoiceDate: Dom::text($header, 'InvoiceDate'),
             type: InvoiceType::tryFrom((string) Dom::text($header, 'InvoiceType')),
             creditNote: Dom::text($header, 'CreditNote') === 'Yes',

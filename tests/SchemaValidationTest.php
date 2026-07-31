@@ -15,6 +15,7 @@ $fixtures = [
     'nachtrag.x86' => '2021-05_Leistungsverzeichnis/GAEB_DA_XML_86_3.3_2021-05.xsd',
     'confirmation.x87' => '2021-05_Leistungsverzeichnis/GAEB_DA_XML_87_3.3_2021-05.xsd',
     'invoice.x89' => '2021-05_Rechnung/GAEB_DA_XML_89_3.3_2021-05.xsd',
+    'supporting.x89b' => '2021-05_Rechnung/GAEB_DA_XML_89B_3.3_2021-05.xsd',
 ];
 
 foreach ($fixtures as $fixture => $xsd) {
