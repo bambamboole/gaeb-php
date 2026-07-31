@@ -51,12 +51,21 @@ exists so they can be added later.
   `Stringable`/`(string)`; `jsonSerialize()` exposes the parsed `GaebFile`);
   `createBid(Bid $bid)` runs the X81/X83 → X84 transform and returns a new
   `GaebDocument` — the source is never mutated. Persistence (writing to
-  disk) is the caller's concern, not this class's.
+  disk) is the caller's concern, not this class's. `createInvoice(Invoice
+  $invoice)` runs the X86 → X89 transform the same way (strict, cumulative
+  quantities, exact money); `validate()` resolves XSDs per phase family
+  (89 → `2021-05_Rechnung`, everything else → `2021-05_Leistungsverzeichnis`).
 - `src/Write/Bid.php` is the mutable bid builder (prices/gap
   fills/comments keyed by `rNo`); `src/Write/BidWriter.php` (`@internal`)
   builds the X84 DOM from the source DOM plus the parsed `GaebFile`;
   `src/Dto/Contractor.php` is the `CTR`/`Address` DTO. Write path is
   strict via `GaebWriteException`; read path is unchanged and lenient.
+- `src/Write/Invoice.php` is the analogous mutable invoice builder
+  (cumulative billed quantities keyed by `rNo`, prior payments);
+  `src/Write/InvoiceWriter.php` (`@internal`) builds the X89 DOM from the
+  X86 source DOM plus the parsed `GaebFile`. On read, `GaebFile->invoice`
+  (`InvoiceData`) carries the header/parties/payments/totals of an X89
+  file.
 - `src/Xml/Dom.php` (`@internal`) holds the shared DOM helpers (`child`,
   `children`, `text`, `floatVal`, `intVal`, `flatten`, `hasAncestorP`);
   `GaebXmlDriver` and `BidWriter` both use it — never duplicate
@@ -81,11 +90,13 @@ exists so they can be added later.
   commit a third-party GAEB file unless the redistribution license chain
   terminates at the copyright holder — an MIT-licensed repo containing
   someone else's file grants nothing.
-- The five standard fixtures (`minimal.x83`, `boq.x83`, `priced.x84`,
-  `realistic.x84`, `contract.x86`) must validate against the official GAEB 3.3 XSDs when
-  they're available: `tests/SchemaValidationTest.php` runs
-  `Dom\XMLDocument::schemaValidate()` against `docs/gaeb/3.3/` (or
-  `GAEB_XSD_DIR`) and skips cleanly when the XSDs aren't present.
+- The six standard fixtures (`minimal.x83`, `boq.x83`, `priced.x84`,
+  `realistic.x84`, `contract.x86`, `invoice.x89`) must validate against the
+  official GAEB 3.3 XSDs when they're available — they span two XSD family
+  dirs (`2021-05_Leistungsverzeichnis/` for X81–X86, `2021-05_Rechnung/` for
+  X89): `tests/SchemaValidationTest.php` runs `Dom\XMLDocument::schemaValidate()`
+  against `docs/gaeb/3.3/` (or `GAEB_XSD_DIR`) and skips cleanly when the
+  XSDs aren't present.
   `tests/fixtures/nonconforming.x83` is deliberately schema-invalid and
   covers the parser's leniency fallbacks instead.
 - Real-world element variants matter more than naive spec reading: keep

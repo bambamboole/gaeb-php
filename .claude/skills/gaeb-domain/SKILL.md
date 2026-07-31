@@ -174,6 +174,25 @@ until clean)
   `->contractor` (`Party`) from `OWN`/`CTR` and `->award` (`AwardData`)
   from `AwardInfo`, parsed on ANY phase where the elements exist — X84
   files therefore expose `contractor` and a sparse `award` too.
+- **X89** (invoice, verified while implementing the M3 read/write +
+  `invoice.x89`): the X89 root is `GAEB → GAEBInfo, PrjInfo?, Invoice` —
+  there is **no `Award`** at all, unlike every other phase. `tgInvoice`
+  order: `DP, OWN?, CTR?, CnstSite` (required), `BoQ?, InvoiceHeader,
+  InvoiceCreator` (`Address` + `TaxNo` both required), `InvoiceRecipient,
+  InvoiceShare+` (min 1), `PaymentMade*, TotalGross` (required, last).
+  `tgInvoiceHeader` requires `InvoiceNo, InvoiceDate, InvoiceType` (enum:
+  `deduction|final account|part final account|advance payment|single
+  invoice|pro forma invoice|reviewed invoice`), `ServiceProvisionStartDate,
+  ServiceProvisionEndDate`. X89 items carry `BillQty` (required, no plain
+  `Qty`) and REQUIRE `QU` (unlike X84, which drops it). X89's `tgBoQInfo`
+  requires `Name, LblBoQ, OutlCompl, BoQBkdn, Totals`; `tgBoQCtgy` requires
+  `LblTx` and `Totals`. `InvoiceShareType` uses English tokens (`basic
+  amount`, …), not German labels. Read model: `GaebFile->invoice`
+  (`InvoiceData`), `Item->billedQty`, `Party->taxNo`. Write:
+  `createInvoice` accepts an X86 source only; `SettlementType` is always
+  emitted as `accumulated`; the caller supplies cumulative billed
+  quantities and any prior payments (`Invoice`/`Payment` in
+  `src/Write/`).
 
 ## Position numbers (rNo)
 
@@ -269,11 +288,13 @@ The official GAEB 3.3 XSD set is committed UNMODIFIED under
 copyright attribution live in `docs/gaeb/README.md` — the schemas are
 GAEB/DIN works redistributed byte-identically; NEVER modify them, and
 never commit the Fachdokumentation PDF (© DIN, git-ignored).
-`tests/SchemaValidationTest.php` validates the five standard fixtures
-(`minimal.x83`, `boq.x83`, `priced.x84`, `realistic.x84`, `contract.x86`) against
-`docs/gaeb/3.3/2021-05_Leistungsverzeichnis/` with
-`DOMDocument::schemaValidate()`; tests skip when the directory is absent.
-Point `GAEB_XSD_DIR` at a different location to override. `tests/fixtures/nonconforming.x83` is intentionally
+`tests/SchemaValidationTest.php` validates the six standard fixtures
+(`minimal.x83`, `boq.x83`, `priced.x84`, `realistic.x84`, `contract.x86`,
+`invoice.x89`) against `docs/gaeb/3.3/` with `DOMDocument::schemaValidate()`;
+they span two XSD family dirs — `2021-05_Leistungsverzeichnis/` for
+X81–X86, `2021-05_Rechnung/` for X89 — and tests skip when the directory is
+absent. `GAEB_XSD_DIR` now points at the `3.3` root (not a family
+subdirectory); point it at a different location to override. `tests/fixtures/nonconforming.x83` is intentionally
 schema-INVALID — it exists to exercise the parser's leniency fallbacks
 (`tests/LenientParsingTest.php`) and is deliberately excluded from
 `SchemaValidationTest`.
