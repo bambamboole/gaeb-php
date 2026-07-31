@@ -290,7 +290,7 @@ GAEB/DIN works redistributed byte-identically; NEVER modify them, and
 never commit the Fachdokumentation PDF (© DIN, git-ignored).
 `tests/SchemaValidationTest.php` validates the six standard fixtures
 (`minimal.x83`, `boq.x83`, `priced.x84`, `realistic.x84`, `contract.x86`,
-`invoice.x89`) against `docs/gaeb/3.3/` with `DOMDocument::schemaValidate()`;
+`invoice.x89`) against `docs/gaeb/3.3/` with `Dom\XMLDocument::schemaValidate()`;
 they span two XSD family dirs — `2021-05_Leistungsverzeichnis/` for
 X81–X86, `2021-05_Rechnung/` for X89 — and tests skip when the directory is
 absent. `GAEB_XSD_DIR` now points at the `3.3` root (not a family

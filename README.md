@@ -1,10 +1,11 @@
 # gaeb-parser
 
 A small PHP library that parses [GAEB DA XML](https://www.gaeb.de/) 3.3 files
-(exchange phases X81–X86) into a typed, readonly PHP object graph, and writes
-schema-valid X84 bids back out. Reading is lenient — missing optional
-elements simply become `null` instead of throwing. Writing is strict — see
-["Writing a bid (X84)"](#writing-a-bid-x84) below.
+(exchange phases X81–X86 plus X89 invoices) into a typed, readonly PHP object
+graph, and writes schema-valid X84 bids and X89 invoices back out. Reading is
+lenient — missing optional elements simply become `null` instead of throwing.
+Writing is strict — see ["Writing a bid (X84)"](#writing-a-bid-x84) and
+["Writing an X89 invoice from a contract"](#writing-an-x89-invoice-from-a-contract) below.
 
 ## Install
 
