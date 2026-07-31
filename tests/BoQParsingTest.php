@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-use Bambamboole\GaebParser\Dto\Provisional;
-use Bambamboole\GaebParser\Dto\TextComplementKind;
-use Bambamboole\GaebParser\GaebParser;
+use Bambamboole\Gaeb\Dto\Provisional;
+use Bambamboole\Gaeb\Dto\TextComplementKind;
+use Bambamboole\Gaeb\GaebParser;
 
 it('returns null boq when the file has none', function () {
     $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/minimal.x83');

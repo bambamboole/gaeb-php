@@ -18,7 +18,7 @@ standard for exchanging construction-tender data: bills of quantities
 | GAEB DA XML 3.x | XML; namespace varies per phase and version: `http://www.gaeb.de/GAEB_DA_XML/DA<phase>/<version>` | `.x81`–`.x86` | fully supported (parser is version-lenient via local-name matching) |
 
 Adding a format = one new class implementing
-`Bambamboole\GaebParser\Driver\Driver` (`supports()` + `parse()` →
+`Bambamboole\Gaeb\Driver\Driver` (`supports()` + `parse()` →
 `GaebFile`), added to `GaebParser`'s default driver list. Map into the
 existing DTO graph; never invent a parallel model.
 

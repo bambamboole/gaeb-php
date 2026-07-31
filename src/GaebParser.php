@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
-namespace Bambamboole\GaebParser;
+namespace Bambamboole\Gaeb;
 
-use Bambamboole\GaebParser\Driver\Driver;
-use Bambamboole\GaebParser\Driver\GaebXmlDriver;
-use Bambamboole\GaebParser\Dto\GaebFile;
+use Bambamboole\Gaeb\Driver\Driver;
+use Bambamboole\Gaeb\Driver\GaebXmlDriver;
+use Bambamboole\Gaeb\Dto\GaebFile;
 
 final class GaebParser
 {

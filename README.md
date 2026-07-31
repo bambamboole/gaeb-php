@@ -1,4 +1,4 @@
-# gaeb-parser
+# gaeb-php
 
 A small PHP library that parses [GAEB DA XML](https://www.gaeb.de/) 3.3 files
 (exchange phases X81–X86) into a typed, readonly PHP object graph, and writes
@@ -9,7 +9,7 @@ elements simply become `null` instead of throwing. Writing is strict — see
 ## Install
 
 ```bash
-composer require bambamboole/gaeb-parser
+composer require bambamboole/gaeb-php
 ```
 
 Requires PHP `^8.4` and the `ext-dom` extension (usually bundled) plus
@@ -87,9 +87,9 @@ bid's prices, filled bidder text gaps, and comments on a `Bid` builder, then
 transform:
 
 ```php
-use Bambamboole\GaebParser\GaebDocument;
-use Bambamboole\GaebParser\Write\Bid;
-use Bambamboole\GaebParser\Dto\Contractor;
+use Bambamboole\Gaeb\GaebDocument;
+use Bambamboole\Gaeb\Write\Bid;
+use Bambamboole\Gaeb\Dto\Contractor;
 
 $tender = GaebDocument::open('tender.x83');
 
@@ -105,6 +105,8 @@ $contractor = new Contractor(
 $bid = new Bid($contractor, currency: 'EUR', date: '2026-07-31');
 // currency defaults to the source's currency, date defaults to today —
 // pass both explicitly for a byte-deterministic output.
+// progSystem: 'my-erp 1.0' overrides the <ProgSystem> stamp
+// (default 'bambamboole/gaeb-php'); Invoice takes the same option.
 
 $bid->setUnitPrice('01.02.0010', '12.50')   // decimal strings are exact, floats convenient
     ->fillGap('01.02.0010', 1, 'Musterhersteller GmbH')
@@ -134,10 +136,10 @@ or invalidate the bid (a missing price, an unknown `rNo`) throws
 ## Writing an X89 invoice from a contract
 
 ```php
-use Bambamboole\GaebParser\Dto\InvoiceType;
-use Bambamboole\GaebParser\Dto\Payment;
-use Bambamboole\GaebParser\GaebDocument;
-use Bambamboole\GaebParser\Write\Invoice;
+use Bambamboole\Gaeb\Dto\InvoiceType;
+use Bambamboole\Gaeb\Dto\Payment;
+use Bambamboole\Gaeb\GaebDocument;
+use Bambamboole\Gaeb\Write\Invoice;
 
 $contract = GaebDocument::open('contract.x86');
 
@@ -183,7 +185,7 @@ $gaeb = $parser->parse($content);   // or ->parseFile($path)
 ```
 
 Drivers are tried in order; the first one whose `supports(string $content): bool`
-returns `true` handles the parse. Implement `Bambamboole\GaebParser\Driver\Driver`
+returns `true` handles the parse. Implement `Bambamboole\Gaeb\Driver\Driver`
 to add support for another format without touching this library.
 
 ## Out of scope

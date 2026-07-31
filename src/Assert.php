@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Bambamboole\GaebParser;
+namespace Bambamboole\Gaeb;
 
 /** @internal */
 final class Assert

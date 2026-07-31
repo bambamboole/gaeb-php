@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-use Bambamboole\GaebParser\Dto\InvoiceType;
-use Bambamboole\GaebParser\Dto\SettlementType;
-use Bambamboole\GaebParser\GaebParser;
+use Bambamboole\Gaeb\Dto\InvoiceType;
+use Bambamboole\Gaeb\Dto\SettlementType;
+use Bambamboole\Gaeb\GaebParser;
 
 it('parses a full X89 invoice into the InvoiceData aggregate', function () {
     $gaeb = GaebParser::fromString(<<<'XML'

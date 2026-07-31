@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Bambamboole\GaebParser\Dto;
+namespace Bambamboole\Gaeb\Dto;
 
 final readonly class TextComplement
 {

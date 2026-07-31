@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace Bambamboole\GaebParser\Driver;
+namespace Bambamboole\Gaeb\Driver;
 
-use Bambamboole\GaebParser\Dto\GaebFile;
+use Bambamboole\Gaeb\Dto\GaebFile;
 
 interface Driver
 {
