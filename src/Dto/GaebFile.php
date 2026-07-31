@@ -7,5 +7,6 @@ final readonly class GaebFile
     public function __construct(
         public GaebInfo $info,
         public ProjectInfo $project,
+        public ?BoQ $boq,
     ) {}
 }
