@@ -169,7 +169,11 @@ segment, dot-joined. The item segment is `RNoPart` or
 Short and long texts contain XHTML-ish `<p><span>` runs. Flattening
 rule: paragraphs joined with `"\n"`, inline content via `textContent`,
 empty paragraphs dropped. The raw serialized `<Description>` element is
-preserved in `Item->descriptionXml` for consumers needing formatting.
+preserved in `Item->descriptionXml` for consumers needing formatting. The
+serialized fragment's `<Description>` root carries its own `xmlns="…"`
+declaration (native `Dom\XMLDocument::saveXml($el)` behavior), so it's
+self-contained and parseable on its own — the legacy `DOMDocument` serializer
+omitted it.
 
 ## Fixture authoring rules
 
@@ -185,8 +189,9 @@ preserved in `Item->descriptionXml` for consumers needing formatting.
 `GaebDocument::createBid(Bid $bid)` builds a **new** X84 DOM by walking the
 source X81/X83 DOM (`src/Write/BidWriter.php`, `@internal`) — derived from
 source, never mutating it: `ID` and `RNoPart` are copied verbatim from the
-source; `Qty` is re-emitted, normalized to 3 decimals
-(`number_format($qty, 3, '.', '')`), not copied verbatim. The `Bid` only
+source; `Qty` is re-emitted decimal-exact from the source string
+(`BigDecimal::of($srcQtyString)->toScale(3, RoundingMode::HalfUp)`), not
+copied verbatim. The `Bid` only
 supplies what changed: `UP`, filled `TextComplement`s, `BidComm`. Money is
 decimal-exact via `brick/math` (`BigDecimal`, `RoundingMode::HalfUp`, scale 3
 for unit prices, scale 2 for item totals and sums); garbage source quantities
@@ -231,8 +236,9 @@ Emission gotchas:
   whole bid ends up empty this way, `createBid` throws
   `GaebWriteException('Bid contains no items')` — `tgBoQ` requires
   `BoQBody`.
-- `IT` = `round(qty × UP, 2)`, or `round(UP, 2)` for qty-less (lump-sum)
-  items; `UP` is formatted `number_format($v, 3, '.', '')` (`tgDecimal_13_3`).
+- `IT` = `(qty · UP)` at scale 2, `RoundingMode::HalfUp`, or `UP` at scale 2
+  `RoundingMode::HalfUp` for qty-less (lump-sum) items; `UP` itself is
+  `BigDecimal` at scale 3 `RoundingMode::HalfUp` (`tgDecimal_13_3`).
 - Totals inclusion mirrors the read-side classification: excludes
   `Provisional::WithoutTotal` items and non-base alternatives
   (`alternativeGroupNo` set with `alternativeSerialNo !== 1`); includes

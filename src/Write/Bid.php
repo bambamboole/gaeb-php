@@ -34,8 +34,9 @@ final class Bid
     {
         // brick/math's BigDecimal::of() doesn't accept float directly (by
         // design — floats are lossy); string/int/BigNumber are the exact
-        // path, float is a convenience cast through PHP's own (string)
-        // rendering (14 significant digits, round-trippable).
+        // path, float is a convenience cast through PHP's own (string) cast
+        // (ini precision, default 14 digits, NOT round-trippable) — enough
+        // for money magnitudes, but pass a decimal string for exactness.
         try {
             $this->prices[$rNo] = BigDecimal::of(is_float($unitPrice) ? (string) $unitPrice : $unitPrice);
         } catch (MathException $e) {

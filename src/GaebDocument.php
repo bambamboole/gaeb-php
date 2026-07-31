@@ -35,7 +35,7 @@ final class GaebDocument implements \JsonSerializable, \Stringable
     {
         try {
             $dom = Dom::parse($content);
-        } catch (\DOMException) {
+        } catch (\DOMException|\ValueError) {
             throw new GaebParseException('Invalid XML');
         }
         $root = $dom->documentElement;

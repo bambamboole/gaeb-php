@@ -33,7 +33,7 @@ final class GaebXmlDriver implements Driver
     {
         try {
             $doc = Dom::parse($content);
-        } catch (\DOMException) {
+        } catch (\DOMException|\ValueError) {
             throw new GaebParseException('Invalid XML');
         }
 

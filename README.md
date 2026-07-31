@@ -36,7 +36,8 @@ currency. `$gaeb->boq` is `null` when the file has no bill of quantities;
 otherwise it holds the BoQ label/currency/totals plus the top-level
 category/item tree, and `allItems()` lazily yields every `Item` depth-first
 with its full position number (`rNo`, e.g. `01.02.0030`) resolved. An item's
-`descriptionXml` holds the raw XML (the serialized `Description` element).
+`descriptionXml` holds the raw XML (the serialized `Description` element,
+self-contained with its own `xmlns="…"` declaration).
 
 ## Item classification & totals
 
