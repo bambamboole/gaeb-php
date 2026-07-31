@@ -46,7 +46,7 @@ final class GaebParser
 
         return new GaebFile(
             info: self::parseInfo($root),
-            project: self::parseProject($root),
+            project: self::parseProject($root, $award),
             boq: $award !== null ? self::parseBoQ($award) : null,
         );
     }
@@ -57,7 +57,8 @@ final class GaebParser
         $award = self::child($root, 'Award');
 
         $phase = null;
-        if ($award !== null && ($dp = self::text($award, 'DP')) !== null) {
+        $dp = $award !== null ? self::text($award, 'DP') : null;
+        if ($dp !== null && ctype_digit($dp)) {
             $phase = (int) $dp;
         } elseif (preg_match('~/DA(8\d)/~', (string) $root->namespaceURI, $m) === 1) {
             $phase = (int) $m[1];
@@ -67,18 +68,20 @@ final class GaebParser
             version: $info !== null ? self::text($info, 'Version') : null,
             phase: $phase,
             date: $info !== null ? self::text($info, 'Date') : null,
-            program: $info !== null ? self::text($info, 'ProgSystem') : null,
+            program: $info !== null ? (self::text($info, 'ProgSystem') ?? self::text($info, 'ProgName')) : null,
         );
     }
 
-    private static function parseProject(\DOMElement $root): ProjectInfo
+    private static function parseProject(\DOMElement $root, ?\DOMElement $award): ProjectInfo
     {
         $prj = self::child($root, 'PrjInfo');
+        $awardInfo = $award !== null ? self::child($award, 'AwardInfo') : null;
 
         return new ProjectInfo(
-            name: $prj !== null ? self::text($prj, 'Name') : null,
+            name: $prj !== null ? (self::text($prj, 'Name') ?? self::text($prj, 'NamePrj')) : null,
             label: $prj !== null ? self::text($prj, 'LblPrj') : null,
-            currency: $prj !== null ? self::text($prj, 'Cur') : null,
+            currency: ($prj !== null ? self::text($prj, 'Cur') : null)
+                ?? ($awardInfo !== null ? self::text($awardInfo, 'Cur') : null),
         );
     }
 
@@ -90,13 +93,15 @@ final class GaebParser
         }
 
         $info = self::child($boq, 'BoQInfo');
+        $awardInfo = self::child($award, 'AwardInfo');
         $totals = $info !== null ? self::child($info, 'Totals') : null;
         $body = self::child($boq, 'BoQBody');
         [$categories, $items] = $body !== null ? self::parseBody($body, []) : [[], []];
 
         return new BoQ(
-            label: $info !== null ? self::text($info, 'LblBoQ') : null,
-            currency: $info !== null ? self::text($info, 'Cur') : null,
+            label: $info !== null ? (self::text($info, 'LblBoQ') ?? self::text($info, 'Name')) : null,
+            currency: ($info !== null ? self::text($info, 'Cur') : null)
+                ?? ($awardInfo !== null ? self::text($awardInfo, 'Cur') : null),
             total: $totals !== null ? self::floatVal($totals, 'Total') : null,
             categories: $categories,
             items: $items,
@@ -147,6 +152,8 @@ final class GaebParser
     private static function parseItem(\DOMElement $item, array $prefix): Item
     {
         $rNoPart = $item->getAttribute('RNoPart');
+        $rNoIndex = $item->getAttribute('RNoIndex');
+        $rNoSegment = $rNoIndex !== '' ? "{$rNoPart}.{$rNoIndex}" : $rNoPart;
         $description = self::child($item, 'Description');
         $complete = $description !== null ? self::child($description, 'CompleteText') : null;
 
@@ -160,7 +167,7 @@ final class GaebParser
         }
 
         return new Item(
-            rNo: implode('.', [...$prefix, $rNoPart]),
+            rNo: implode('.', [...$prefix, $rNoSegment]),
             rNoPart: $rNoPart,
             qty: self::floatVal($item, 'Qty'),
             unit: self::text($item, 'QU'),
@@ -215,8 +222,7 @@ final class GaebParser
         return $value === null ? null : (float) $value;
     }
 
-    /** Flatten GAEB rich text (<p><span>…) to plain text, paragraphs joined by
-. */
+    /** Flatten GAEB rich text (<p><span>…) to plain text, paragraphs joined by newlines. */
     private static function flatten(?\DOMElement $el): ?string
     {
         if ($el === null) {
@@ -236,7 +242,6 @@ final class GaebParser
             }
         }
 
-        return $lines === [] ? null : implode('
-', $lines);
+        return $lines === [] ? null : implode("\n", $lines);
     }
 }

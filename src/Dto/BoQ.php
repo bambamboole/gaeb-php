@@ -16,7 +16,12 @@ final readonly class BoQ
         public array $items,
     ) {}
 
-    /** @return \Generator<int, Item> */
+    /**
+     * Iterates depth-first: a level's direct items are yielded before
+     * descending into its categories — not necessarily document order.
+     *
+     * @return \Generator<int, Item>
+     */
     public function allItems(): \Generator
     {
         yield from $this->items;

@@ -35,6 +35,14 @@ it('detects phase from namespace when DP element is missing', function () {
     expect($gaeb->info->phase)->toBe(84);
 });
 
+it('falls back to the namespace when DP is not numeric', function () {
+    $gaeb = GaebParser::fromString(
+        '<GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA84/3.3"><Award><DP>abc</DP></Award></GAEB>'
+    );
+
+    expect($gaeb->info->phase)->toBe(84);
+});
+
 it('parses leniently when optional metadata is missing', function () {
     $gaeb = GaebParser::fromString('<GAEB><Award/></GAEB>');
 

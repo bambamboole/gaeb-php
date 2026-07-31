@@ -28,27 +28,27 @@ foreach ($gaeb->boq->allItems() as $item) { ... }   // lazy, flattened
 ```
 
 `$gaeb->info` exposes the GAEB version, exchange phase (`81`–`86`), date, and
-generating program. `$gaeb->project` exposes the project name, label,
-description, and currency. `$gaeb->boq` is `null` when the file has no bill
-of quantities; otherwise it holds the BoQ label/currency/totals plus the
-top-level category/item tree, and `allItems()` lazily yields every `Item`
-depth-first with its full position number (`rNo`, e.g. `01.02.0030`)
-resolved.
+generating program. `$gaeb->project` exposes the project name, label, and
+currency. `$gaeb->boq` is `null` when the file has no bill of quantities;
+otherwise it holds the BoQ label/currency/totals plus the top-level
+category/item tree, and `allItems()` lazily yields every `Item` depth-first
+with its full position number (`rNo`, e.g. `01.02.0030`) resolved. An item's
+`descriptionXml` holds the raw XML (the serialized `Description` element).
 
 ## Out of scope
 
 - Writing/generating GAEB files
 - XSD validation
 - Legacy formats (GAEB 90, GAEB 2000)
+- Markup/surcharge items (`MarkupItem`) — skipped silently
 
 These may be added later without breaking the public API.
 
 ## Testing
 
-Most fixtures under `tests/fixtures/` are synthetic, hand-crafted XML files
-written to exercise specific parsing paths. `tests/fixtures/sample.x84` is a
-real-world GAEB sample file — see `tests/fixtures/README.md` for its origin
-and license.
+All fixtures under `tests/fixtures/` are synthetic, hand-crafted XML files
+written for this project to exercise specific parsing paths — see
+`tests/fixtures/README.md`.
 
 ## License
 

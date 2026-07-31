@@ -1,14 +1,11 @@
 # Test fixtures
 
-`minimal.x83`, `boq.x83`, and `priced.x84` are hand-crafted, synthetic files
-written for this project to exercise specific parsing paths.
+All fixtures in this directory are synthetic, hand-crafted XML files written
+for this project to exercise specific parsing paths. None of them are
+copies of, or derived from, third-party GAEB sample/certification files.
 
-`sample.x84` is a real-world GAEB DA XML 3.3 file: the official BVBS
-("Bundesvereinigung Bausoftware") sample/certification file for the
-"Bauausführung" (construction execution, exchange phase X84) test suite,
-version 11.06.2021.
-
-- Origin: [`meindonut/gaeb-parser`](https://github.com/meindonut/gaeb-parser),
-  path `tests/official_tests_gaeb_da_xml_3_3/bauausfuehrung/BVBS_Pruefdatei GAEB DA XML 3.3 - Bauausfuehrung - V 11 06 2021.x84`
-- License: the source repository is MIT-licensed (copyright (c) 2025 Lucas
-  Carlier), which permits redistribution.
+`realistic.x84` is modeled on the structure and element naming of a
+real-world GAEB DA XML 3.3 "Bauausfuehrung" (X84) file — including
+`NamePrj`, `Award/AwardInfo/Cur`, `BoQInfo/Name`, `GAEBInfo/ProgName`,
+`RNoIndex` item variants, and an item with no `Description` element — but
+all project names, texts, and numbers are invented for this test suite.

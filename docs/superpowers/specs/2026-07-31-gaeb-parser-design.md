@@ -58,7 +58,7 @@ no factories.
   items
 - **Item** — full position number (`rNo`, e.g. `01.02.0030`), `rNoPart`,
   quantity (`float|null`), unit, short text, long text (flattened plain
-  text), `descriptionXml` (raw inner XML of the Description element),
+  text), `descriptionXml` (raw XML, the serialized Description element),
   unit price and total price (`float|null`, populated in X84/X86 files),
   common flags as nullable properties where cheap (e.g. lump-sum marker)
 
