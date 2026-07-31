@@ -1,11 +1,11 @@
 <?php declare(strict_types=1);
 
-use Bambamboole\GaebParser\Dto\InvoiceType;
-use Bambamboole\GaebParser\Dto\Payment;
-use Bambamboole\GaebParser\Dto\SettlementType;
-use Bambamboole\GaebParser\GaebDocument;
-use Bambamboole\GaebParser\GaebWriteException;
-use Bambamboole\GaebParser\Write\Invoice;
+use Bambamboole\Gaeb\Dto\InvoiceType;
+use Bambamboole\Gaeb\Dto\Payment;
+use Bambamboole\Gaeb\Dto\SettlementType;
+use Bambamboole\Gaeb\GaebDocument;
+use Bambamboole\Gaeb\GaebWriteException;
+use Bambamboole\Gaeb\Write\Invoice;
 
 function contractDocument(): GaebDocument
 {

@@ -1,9 +1,9 @@
 ---
 name: pr-review
-description: Use when reviewing a gaeb-parser pull request, branch diff, or set of staged/working changes for quality — reuse, simplification, efficiency, and altitude cleanups, plus adherence to the project guidelines. Review-only; it surfaces findings and never commits the changes it proposes.
+description: Use when reviewing a gaeb-php pull request, branch diff, or set of staged/working changes for quality — reuse, simplification, efficiency, and altitude cleanups, plus adherence to the project guidelines. Review-only; it surfaces findings and never commits the changes it proposes.
 ---
 
-# gaeb-parser PR Review
+# gaeb-php PR Review
 
 Review changed code for **quality**: is the change as simple, reused,
 efficient, and well-placed as it should be, and does it follow the

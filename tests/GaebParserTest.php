@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
-use Bambamboole\GaebParser\GaebParseException;
-use Bambamboole\GaebParser\GaebParser;
+use Bambamboole\Gaeb\GaebParseException;
+use Bambamboole\Gaeb\GaebParser;
 
 it('throws on invalid xml', function () {
     GaebParser::fromString('not xml at all');

@@ -1,14 +1,14 @@
 <?php declare(strict_types=1);
 
-namespace Bambamboole\GaebParser;
+namespace Bambamboole\Gaeb;
 
-use Bambamboole\GaebParser\Driver\GaebXmlDriver;
-use Bambamboole\GaebParser\Dto\GaebFile;
-use Bambamboole\GaebParser\Write\Bid;
-use Bambamboole\GaebParser\Write\BidWriter;
-use Bambamboole\GaebParser\Write\Invoice;
-use Bambamboole\GaebParser\Write\InvoiceWriter;
-use Bambamboole\GaebParser\Xml\Dom;
+use Bambamboole\Gaeb\Driver\GaebXmlDriver;
+use Bambamboole\Gaeb\Dto\GaebFile;
+use Bambamboole\Gaeb\Write\Bid;
+use Bambamboole\Gaeb\Write\BidWriter;
+use Bambamboole\Gaeb\Write\Invoice;
+use Bambamboole\Gaeb\Write\InvoiceWriter;
+use Bambamboole\Gaeb\Xml\Dom;
 use Dom\XMLDocument;
 
 final class GaebDocument implements \JsonSerializable, \Stringable

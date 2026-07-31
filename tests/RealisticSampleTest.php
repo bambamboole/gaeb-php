@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
-use Bambamboole\GaebParser\Dto\TextComplementKind;
-use Bambamboole\GaebParser\GaebParser;
+use Bambamboole\Gaeb\Dto\TextComplementKind;
+use Bambamboole\Gaeb\GaebParser;
 
 it('parses the self-authored realistic sample fixture', function () {
     $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/realistic.x84');

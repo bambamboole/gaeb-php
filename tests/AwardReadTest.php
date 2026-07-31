@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
-use Bambamboole\GaebParser\Dto\WarrantyUnit;
-use Bambamboole\GaebParser\GaebParser;
+use Bambamboole\Gaeb\Dto\WarrantyUnit;
+use Bambamboole\Gaeb\GaebParser;
 
 it('parses the contractor party from an X84 bid', function () {
     $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/realistic.x84');

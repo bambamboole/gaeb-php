@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
-use Bambamboole\GaebParser\Dto\TextComplementKind;
-use Bambamboole\GaebParser\GaebParser;
+use Bambamboole\Gaeb\Dto\TextComplementKind;
+use Bambamboole\Gaeb\GaebParser;
 
 $bidItemXml = function (string $itemChildren): string {
     return '<GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA83/3.3"><Award><DP>83</DP><BoQ><BoQBody><Itemlist>'

@@ -1,11 +1,11 @@
 <?php declare(strict_types=1);
 
-namespace Bambamboole\GaebParser\Write;
+namespace Bambamboole\Gaeb\Write;
 
-use Bambamboole\GaebParser\Assert;
-use Bambamboole\GaebParser\Dto\InvoiceType;
-use Bambamboole\GaebParser\Dto\Payment;
-use Bambamboole\GaebParser\GaebWriteException;
+use Bambamboole\Gaeb\Assert;
+use Bambamboole\Gaeb\Dto\InvoiceType;
+use Bambamboole\Gaeb\Dto\Payment;
+use Bambamboole\Gaeb\GaebWriteException;
 use Brick\Math\BigDecimal;
 use Brick\Math\BigNumber;
 use Brick\Math\Exception\MathException;

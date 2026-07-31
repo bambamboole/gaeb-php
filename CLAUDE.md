@@ -1,4 +1,4 @@
-# gaeb-parser
+# gaeb-php
 
 Small PHP library (runtime deps: ext-dom + brick/math only) parsing GAEB DA XML files (German
 construction-tender exchange format) into readonly PHP objects. Read-only
@@ -37,7 +37,7 @@ exists so they can be added later.
   format-sniffed to produce a helpful error (GAEB 90 / GAEB 2000 /
   unrecognized).
 - All XML parsing lives in `GaebXmlDriver`. A new format means a new
-  class implementing `Bambamboole\GaebParser\Driver\Driver` that maps
+  class implementing `Bambamboole\Gaeb\Driver\Driver` that maps
   into the existing DTO graph — never bolt format branches into the
   facade, never invent a parallel object model.
 - DTO graph: `GaebFile → GaebInfo / ProjectInfo / BoQ → BoQCategory /

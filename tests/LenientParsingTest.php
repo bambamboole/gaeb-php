@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-use Bambamboole\GaebParser\GaebParser;
+use Bambamboole\Gaeb\GaebParser;
 
 it('parses nonstandard element spellings and missing required parts leniently', function () {
     $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/nonconforming.x83');

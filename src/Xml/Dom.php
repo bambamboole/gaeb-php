@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Bambamboole\GaebParser\Xml;
+namespace Bambamboole\Gaeb\Xml;
 
 use Dom\Element;
 use Dom\XMLDocument;

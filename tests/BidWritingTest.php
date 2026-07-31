@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
-use Bambamboole\GaebParser\Dto\Contractor;
-use Bambamboole\GaebParser\GaebDocument;
-use Bambamboole\GaebParser\GaebParser;
-use Bambamboole\GaebParser\GaebWriteException;
-use Bambamboole\GaebParser\Write\Bid;
+use Bambamboole\Gaeb\Dto\Contractor;
+use Bambamboole\Gaeb\GaebDocument;
+use Bambamboole\Gaeb\GaebParser;
+use Bambamboole\Gaeb\GaebWriteException;
+use Bambamboole\Gaeb\Write\Bid;
 
 function makeBid(): Bid
 {

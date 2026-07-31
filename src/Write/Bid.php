@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
-namespace Bambamboole\GaebParser\Write;
+namespace Bambamboole\Gaeb\Write;
 
-use Bambamboole\GaebParser\Assert;
-use Bambamboole\GaebParser\Dto\Contractor;
-use Bambamboole\GaebParser\GaebWriteException;
+use Bambamboole\Gaeb\Assert;
+use Bambamboole\Gaeb\Dto\Contractor;
+use Bambamboole\Gaeb\GaebWriteException;
 use Brick\Math\BigDecimal;
 use Brick\Math\BigNumber;
 use Brick\Math\Exception\MathException;
