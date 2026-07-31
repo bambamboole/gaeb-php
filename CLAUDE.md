@@ -41,8 +41,9 @@ exists so they can be added later.
   into the existing DTO graph — never bolt format branches into the
   facade, never invent a parallel object model.
 - DTO graph: `GaebFile → GaebInfo / ProjectInfo / BoQ → BoQCategory /
-  Item`. Phase differences are nullable properties; one model for all
-  phases.
+  Item`, plus nullable award sections `owner`/`contractor` (`Party`, from
+  `Award/OWN`/`CTR`) and `award` (`AwardData`, from `Award/AwardInfo`).
+  Phase differences are nullable properties; one model for all phases.
 - `GaebDocument` is the read/write handle: `open()`/`fromString()` load a
   DOM; `file()`/`phase()` lazily parse it into a `GaebFile` via
   `GaebXmlDriver` (cached); `validate(?string $xsdDir = null)`
@@ -80,8 +81,8 @@ exists so they can be added later.
   commit a third-party GAEB file unless the redistribution license chain
   terminates at the copyright holder — an MIT-licensed repo containing
   someone else's file grants nothing.
-- The four standard fixtures (`minimal.x83`, `boq.x83`, `priced.x84`,
-  `realistic.x84`) must validate against the official GAEB 3.3 XSDs when
+- The five standard fixtures (`minimal.x83`, `boq.x83`, `priced.x84`,
+  `realistic.x84`, `contract.x86`) must validate against the official GAEB 3.3 XSDs when
   they're available: `tests/SchemaValidationTest.php` runs
   `Dom\XMLDocument::schemaValidate()` against `docs/gaeb/3.3/` (or
   `GAEB_XSD_DIR`) and skips cleanly when the XSDs aren't present.

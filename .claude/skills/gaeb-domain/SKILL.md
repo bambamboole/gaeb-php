@@ -156,6 +156,24 @@ until clean)
   applies to `SubDescr/Description` too, which is why `realistic.x84`'s
   priced sub-description omits `Description` entirely rather than trying
   to give it a long text.
+- **X86** (award/contract, verified while implementing the M2 read +
+  `contract.x86`): `tgAward` requires `OWN` and `CTR` (each with a required
+  `tgAddress`), order `DP, AwardInfo?, OWN, Requester*, CTR, (CnstSite,
+  NotifSite?)*, AddText*, BoQ?, WgChange?`. `tgAwardInfo` keeps
+  `Cur/CurLbl`, `BidDate`, `CnstStart`, `CnstEnd`, `ContrNo`, `ContrDate`,
+  `AcceptType`, `WarrDur` (int ≤ 99), `WarrUnit` (`Years|Months`),
+  `WarrEnd`, `PerformPcnt`, `WarrantPcnt`, `COInfo*`, `MaintInfo` —
+  **`OpenDate` does not exist anywhere in X86** despite appearing in naive
+  spec readings. X86's `tgBoQInfo` REQUIRES `Name`, `LblBoQ` (which X84
+  drops!), and `OutlCompl` (`AllTxt|OutTxt|DetailTxt`); still no `Cur`
+  (currency comes from `AwardInfo/Cur`). `tgBoQCtgy` keeps `LblTx` and
+  requires `Totals`. X86's `tgItem` is rich again, unlike X84: keeps `QU`,
+  `LumpSumItem`, `BidComm`, `SubDescr`, optional `Accepted`; and X86 does
+  NOT restrict `tgCompleteText`/`tgpTC`, so `OutlineText` and narrative
+  `DetailTxt/Text` are both allowed. Read model: `GaebFile->owner` /
+  `->contractor` (`Party`) from `OWN`/`CTR` and `->award` (`AwardData`)
+  from `AwardInfo`, parsed on ANY phase where the elements exist — X84
+  files therefore expose `contractor` and a sparse `award` too.
 
 ## Position numbers (rNo)
 
@@ -251,8 +269,8 @@ The official GAEB 3.3 XSD set is committed UNMODIFIED under
 copyright attribution live in `docs/gaeb/README.md` — the schemas are
 GAEB/DIN works redistributed byte-identically; NEVER modify them, and
 never commit the Fachdokumentation PDF (© DIN, git-ignored).
-`tests/SchemaValidationTest.php` validates the four standard fixtures
-(`minimal.x83`, `boq.x83`, `priced.x84`, `realistic.x84`) against
+`tests/SchemaValidationTest.php` validates the five standard fixtures
+(`minimal.x83`, `boq.x83`, `priced.x84`, `realistic.x84`, `contract.x86`) against
 `docs/gaeb/3.3/2021-05_Leistungsverzeichnis/` with
 `DOMDocument::schemaValidate()`; tests skip when the directory is absent.
 Point `GAEB_XSD_DIR` at a different location to override. `tests/fixtures/nonconforming.x83` is intentionally
