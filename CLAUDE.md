@@ -14,6 +14,12 @@ exists so they can be added later.
   unreadable files, unparseable/unrecognized input, or a missing `<GAEB>`
   root. Every missing or optional element yields `null` (or an empty
   list) — never throw over content.
+- **Strict write contract:** `GaebWriteException` is thrown for missing
+  unit prices on priceable items, unknown `rNo`s referenced in a `Bid`, a
+  bid that would end up with zero items, missing required
+  `Contractor`/source fields, or an unwritable `save()` target — writing
+  never silently drops, defaults, or guesses data. The read path stays
+  unchanged and lenient; this is a write-only addition.
 - **DTOs** (`src/Dto/`) are `final readonly` with public promoted
   properties. No interfaces, factories, or setters in the DTO layer.
 - **Element lookup by LOCAL NAME only** — never match namespaces or
@@ -37,6 +43,21 @@ exists so they can be added later.
 - DTO graph: `GaebFile → GaebInfo / ProjectInfo / BoQ → BoQCategory /
   Item`. Phase differences are nullable properties; one model for all
   phases.
+- `GaebDocument` is the read/write handle: `open()`/`fromString()` load a
+  DOM; `file()`/`phase()` lazily parse it into a `GaebFile` via
+  `GaebXmlDriver` (cached); `validate(?string $xsdDir = null)`
+  schema-checks against the bundled XSDs; `toString()`/`save()` emit;
+  `createBid(Bid $bid)` runs the X81/X83 → X84 transform and returns a new
+  `GaebDocument` — the source is never mutated.
+- `src/Write/Bid.php` is the mutable bid builder (prices/gap
+  fills/comments keyed by `rNo`); `src/Write/BidWriter.php` (`@internal`)
+  builds the X84 DOM from the source DOM plus the parsed `GaebFile`;
+  `src/Dto/Contractor.php` is the `CTR`/`Address` DTO. Write path is
+  strict via `GaebWriteException`; read path is unchanged and lenient.
+- `src/Xml/Dom.php` (`@internal`) holds the shared DOM helpers (`child`,
+  `children`, `text`, `floatVal`, `intVal`, `flatten`, `hasAncestorP`);
+  `GaebXmlDriver` and `BidWriter` both use it — never duplicate
+  DOM-walking helpers.
 
 ## Verification
 
