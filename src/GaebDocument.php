@@ -6,13 +6,15 @@ use Bambamboole\GaebParser\Driver\GaebXmlDriver;
 use Bambamboole\GaebParser\Dto\GaebFile;
 use Bambamboole\GaebParser\Write\Bid;
 use Bambamboole\GaebParser\Write\BidWriter;
+use Bambamboole\GaebParser\Xml\Dom;
+use Dom\XMLDocument;
 
 final class GaebDocument implements \JsonSerializable, \Stringable
 {
     private ?GaebFile $file = null;
 
     private function __construct(
-        private readonly \DOMDocument $dom,
+        private readonly XMLDocument $dom,
         private readonly ?string $original,
     ) {}
 
@@ -31,13 +33,9 @@ final class GaebDocument implements \JsonSerializable, \Stringable
 
     public static function fromString(string $content): self
     {
-        $dom = new \DOMDocument;
-        $previous = libxml_use_internal_errors(true);
-        $loaded = $dom->loadXML($content);
-        libxml_clear_errors();
-        libxml_use_internal_errors($previous);
-
-        if (! $loaded) {
+        try {
+            $dom = Dom::parse($content);
+        } catch (\DOMException) {
             throw new GaebParseException('Invalid XML');
         }
         $root = $dom->documentElement;
@@ -49,7 +47,7 @@ final class GaebDocument implements \JsonSerializable, \Stringable
     }
 
     /** used by createBid for derived documents */
-    private static function fromDom(\DOMDocument $dom): self
+    private static function fromDom(XMLDocument $dom): self
     {
         return new self($dom, null);
     }
@@ -77,8 +75,14 @@ final class GaebDocument implements \JsonSerializable, \Stringable
             return ["Schema file not found: {$xsd}"];
         }
 
+        // schemaValidate only recognizes the validation root on a document
+        // that came through libxml's parser; a document built purely via
+        // the construction API (createEmpty + createElementNS, as
+        // BidWriter does) fails with "No matching global declaration"
+        // even when well-formed and schema-conformant. Re-parsing the
+        // serialized form guarantees a parsed document either way.
         $previous = libxml_use_internal_errors(true);
-        $valid = $this->dom->schemaValidate($xsd);
+        $valid = Dom::parse($this->toString())->schemaValidate($xsd);
         $errors = array_map(
             fn (\LibXMLError $e) => trim($e->message).' (line '.$e->line.')',
             libxml_get_errors(),
@@ -91,7 +95,7 @@ final class GaebDocument implements \JsonSerializable, \Stringable
 
     public function toString(): string
     {
-        return $this->original ?? ($this->dom->saveXML() ?: '');
+        return $this->original ?? ($this->dom->saveXml() ?: '');
     }
 
     public function __toString(): string

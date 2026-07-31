@@ -2,15 +2,46 @@
 
 namespace Bambamboole\GaebParser\Xml;
 
+use Dom\Element;
+use Dom\XMLDocument;
+
 /**
  * @internal
  */
 final class Dom
 {
-    public static function child(\DOMElement $el, string $name): ?\DOMElement
+    /**
+     * Parses XML into a Dom\XMLDocument, throwing \DOMException on malformed
+     * input (same contract as Dom\XMLDocument::createFromString) but without
+     * the accompanying E_WARNING — createFromString emits one on invalid XML
+     * in addition to throwing, which callers must not let leak as a PHP
+     * warning.
+     */
+    public static function parse(string $content): XMLDocument
+    {
+        set_error_handler(static fn (): bool => true);
+        try {
+            return XMLDocument::createFromString($content);
+        } finally {
+            restore_error_handler();
+        }
+    }
+
+    /**
+     * Element::getAttribute() returns null for a missing attribute
+     * (spec-compliant), unlike legacy DOMElement which returned ''. Callers
+     * throughout this codebase rely on the legacy '' contract (e.g. `!==
+     * ''` presence checks), so normalize here instead of at every call site.
+     */
+    public static function attr(Element $el, string $name): string
+    {
+        return $el->getAttribute($name) ?? '';
+    }
+
+    public static function child(Element $el, string $name): ?Element
     {
         foreach ($el->childNodes as $node) {
-            if ($node instanceof \DOMElement && $node->localName === $name) {
+            if ($node instanceof Element && $node->localName === $name) {
                 return $node;
             }
         }
@@ -18,7 +49,7 @@ final class Dom
         return null;
     }
 
-    public static function text(\DOMElement $el, string $name): ?string
+    public static function text(Element $el, string $name): ?string
     {
         $node = self::child($el, $name);
         if ($node === null) {
@@ -30,13 +61,13 @@ final class Dom
     }
 
     /**
-     * @return list<\DOMElement>
+     * @return list<Element>
      */
-    public static function children(\DOMElement $el, string $name): array
+    public static function children(Element $el, string $name): array
     {
         $result = [];
         foreach ($el->childNodes as $node) {
-            if ($node instanceof \DOMElement && $node->localName === $name) {
+            if ($node instanceof Element && $node->localName === $name) {
                 $result[] = $node;
             }
         }
@@ -44,14 +75,14 @@ final class Dom
         return $result;
     }
 
-    public static function floatVal(\DOMElement $el, string $name): ?float
+    public static function floatVal(Element $el, string $name): ?float
     {
         $value = self::text($el, $name);
 
         return $value === null ? null : (float) $value;
     }
 
-    public static function intVal(\DOMElement $el, string $name): ?int
+    public static function intVal(Element $el, string $name): ?int
     {
         $value = self::text($el, $name);
 
@@ -59,12 +90,12 @@ final class Dom
     }
 
     /** Flatten GAEB rich text (<p><span>…) to plain text, paragraphs joined by newlines. */
-    public static function flatten(?\DOMElement $el): ?string
+    public static function flatten(?Element $el): ?string
     {
         if ($el === null) {
             return null;
         }
-        $paragraphs = $el->getElementsByTagNameNS('*', 'p');
+        $paragraphs = $el->querySelectorAll('p');
         if ($paragraphs->length === 0) {
             $value = trim($el->textContent);
 
@@ -85,10 +116,10 @@ final class Dom
     }
 
     /** Whether $node has a <p> ancestor strictly between it and $el (exclusive). */
-    private static function hasAncestorP(\DOMElement $node, \DOMElement $el): bool
+    private static function hasAncestorP(Element $node, Element $el): bool
     {
         $parent = $node->parentNode;
-        while ($parent instanceof \DOMElement && $parent !== $el) {
+        while ($parent instanceof Element && $parent !== $el) {
             if ($parent->localName === 'p') {
                 return true;
             }
