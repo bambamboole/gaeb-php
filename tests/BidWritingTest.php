@@ -366,4 +366,15 @@ it('throws when the Bid date is not in YYYY-MM-DD format', function () {
         email: 'bau@example.test',
         phone: null,
     ), date: '02/01/2020');
-})->throws(GaebWriteException::class, "Invalid Bid date '02/01/2020'");
+})->throws(GaebWriteException::class, 'Invalid date (expected YYYY-MM-DD): 02/01/2020');
+
+it('throws when the Bid date is calendar-invalid', function () {
+    new Bid(new Contractor(
+        name: 'Muster Bau GmbH',
+        street: 'Handwerkerweg 1',
+        zip: '53179',
+        city: 'Bonn',
+        email: 'bau@example.test',
+        phone: null,
+    ), date: '2024-13-45');
+})->throws(GaebWriteException::class, 'Invalid date (expected YYYY-MM-DD): 2024-13-45');

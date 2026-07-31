@@ -7,7 +7,7 @@ use Bambamboole\GaebParser\Dto\GaebFile;
 use Bambamboole\GaebParser\Write\Bid;
 use Bambamboole\GaebParser\Write\BidWriter;
 
-final class GaebDocument
+final class GaebDocument implements \JsonSerializable, \Stringable
 {
     private ?GaebFile $file = null;
 
@@ -94,15 +94,14 @@ final class GaebDocument
         return $this->original ?? ($this->dom->saveXML() ?: '');
     }
 
-    public function save(string $path): void
+    public function __toString(): string
     {
-        if (! is_dir(dirname($path))) {
-            throw new GaebWriteException("Cannot write file: {$path}");
-        }
-        $result = file_put_contents($path, $this->toString());
-        if ($result === false) {
-            throw new GaebWriteException("Cannot write file: {$path}");
-        }
+        return $this->toString();
+    }
+
+    public function jsonSerialize(): GaebFile
+    {
+        return $this->file();
     }
 
     /** Transforms this X81/X83 tender into a new X84 bid document. */

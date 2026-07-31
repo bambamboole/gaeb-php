@@ -109,7 +109,7 @@ if ($errors !== []) {
     throw new RuntimeException(implode("\n", $errors));
 }
 
-$award->save('bid.x84');        // GaebWriteException if the target isn't writable
+file_put_contents('bid.x84', (string) $award);
 ```
 
 The computed `BoQ` total sums each emitted item's `IT`, excluding
@@ -117,8 +117,8 @@ The computed `BoQ` total sums each emitted item's `IT`, excluding
 (`alternativeGroupNo` set with `alternativeSerialNo !== 1`); `notApplicable`
 items are never emitted at all. Reading tolerates schema deviations and
 wild-file spellings; writing refuses to guess — anything that would corrupt
-or invalidate the bid (a missing price, an unknown `rNo`, an unwritable save
-path) throws `GaebWriteException` instead of silently producing a bad file.
+or invalidate the bid (a missing price, an unknown `rNo`) throws
+`GaebWriteException` instead of silently producing a bad file.
 
 `GaebDocument::validate(?string $xsdDir = null): array` schema-checks the
 document against the XSDs bundled in the package

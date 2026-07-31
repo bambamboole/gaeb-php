@@ -2,7 +2,6 @@
 
 use Bambamboole\GaebParser\GaebDocument;
 use Bambamboole\GaebParser\GaebParseException;
-use Bambamboole\GaebParser\GaebWriteException;
 
 it('opens a file and exposes the parsed model lazily', function () {
     $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
@@ -40,19 +39,17 @@ it('reports a missing xsd instead of throwing', function () {
         ->and($errors[0])->toContain('/nonexistent');
 });
 
-it('saves to a file', function () {
-    $target = sys_get_temp_dir().'/gaeb-doc-test.x83';
-    if (is_file($target)) {
-        unlink($target);
-    }
-    GaebDocument::open(__DIR__.'/fixtures/boq.x83')->save($target);
+it('casts to string the same as toString()', function () {
+    $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
 
-    expect(file_get_contents($target))->toBe(file_get_contents(__DIR__.'/fixtures/boq.x83'));
-    if (is_file($target)) {
-        unlink($target);
-    }
+    expect((string) $doc)->toBe($doc->toString());
 });
 
-it('throws GaebWriteException when saving to an unwritable path', function () {
-    GaebDocument::open(__DIR__.'/fixtures/boq.x83')->save('/nonexistent-dir/x.x83');
-})->throws(GaebWriteException::class);
+it('json-encodes to the same output as its parsed file', function () {
+    $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
+
+    $json = json_encode($doc);
+
+    expect($json)->toBe(json_encode($doc->file()))
+        ->and($json)->toContain('PRJ-1');
+});
