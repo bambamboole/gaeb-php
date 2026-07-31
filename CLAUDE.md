@@ -1,6 +1,6 @@
 # gaeb-parser
 
-Small, dependency-free PHP library parsing GAEB DA XML files (German
+Small PHP library (runtime deps: ext-dom + brick/math only) parsing GAEB DA XML files (German
 construction-tender exchange format) into readonly PHP objects. Read-only
 and lenient. Supports GAEB DA XML 3.x (phases 81–86); GAEB 90 and
 GAEB 2000 are detected but rejected with a clear error — the driver seam
@@ -60,7 +60,7 @@ exists so they can be added later.
   `children`, `text`, `floatVal`, `intVal`, `flatten`, `hasAncestorP`);
   `GaebXmlDriver` and `BidWriter` both use it — never duplicate
   DOM-walking helpers. XML internals use PHP 8.4's native `Dom\` API
-  (`Dom\XMLDocument`); direct-child element lookups via `Dom::child()`
+  (`Dom\XMLDocument`); direct-child element lookups via `Xml\Dom::child()`
   (`:scope` selectors unsupported on the native API).
 - Money in the write path is decimal-exact via `brick/math`: `BigDecimal`,
   `RoundingMode::HalfUp`, scale 3 for unit prices, scale 2 for item totals
@@ -83,7 +83,7 @@ exists so they can be added later.
 - The four standard fixtures (`minimal.x83`, `boq.x83`, `priced.x84`,
   `realistic.x84`) must validate against the official GAEB 3.3 XSDs when
   they're available: `tests/SchemaValidationTest.php` runs
-  `DOMDocument::schemaValidate()` against `docs/gaeb/3.3/` (or
+  `Dom\XMLDocument::schemaValidate()` against `docs/gaeb/3.3/` (or
   `GAEB_XSD_DIR`) and skips cleanly when the XSDs aren't present.
   `tests/fixtures/nonconforming.x83` is deliberately schema-invalid and
   covers the parser's leniency fallbacks instead.

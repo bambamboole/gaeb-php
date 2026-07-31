@@ -15,6 +15,7 @@ composer require bambamboole/gaeb-parser
 Requires PHP `^8.4` and the `ext-dom` extension (usually bundled) plus
 `brick/math` for decimal-exact money handling in the write path. No other
 runtime dependencies.
+Built on PHP 8.4's native `Dom\XMLDocument` API for lightweight XML processing.
 
 ## Usage
 
