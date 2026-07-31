@@ -4,6 +4,8 @@ namespace Bambamboole\GaebParser;
 
 use Bambamboole\GaebParser\Driver\GaebXmlDriver;
 use Bambamboole\GaebParser\Dto\GaebFile;
+use Bambamboole\GaebParser\Write\Bid;
+use Bambamboole\GaebParser\Write\BidWriter;
 
 final class GaebDocument
 {
@@ -100,5 +102,11 @@ final class GaebDocument
         if ($result === false) {
             throw new GaebWriteException("Cannot write file: {$path}");
         }
+    }
+
+    /** Transforms this X81/X83 tender into a new X84 bid document. */
+    public function createBid(Bid $bid): self
+    {
+        return self::fromDom((new BidWriter)->write($this->dom, $this->file(), $bid));
     }
 }
