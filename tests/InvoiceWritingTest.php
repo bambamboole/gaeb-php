@@ -127,3 +127,104 @@ it('rejects payments missing required fields', function () {
 
     contractDocument()->createInvoice($invoice);
 })->throws(GaebWriteException::class, 'Payment is missing required field(s): totalVat, paymentDate');
+
+/**
+ * A doctored minimal X86 contract: one item (rNo 01.0010) under category 01,
+ * with every piece healthy by default so a single fragment can be knocked
+ * out per test to reach one specific writer throw.
+ */
+function minimalX86Contract(
+    string $prjInfo = '<NamePrj>Test Project</NamePrj>',
+    string $lblTx = '<LblTx><p><span>Category</span></p></LblTx>',
+    string $boqInfoFields = "<Name>LV</Name>\n<LblBoQ>LV Label</LblBoQ>\n<OutlCompl>AllTxt</OutlCompl>",
+    string $itemBody = "<QU>m3</QU>\n<UP>10.00</UP>\n<IT>10.00</IT>",
+): string {
+    return <<<XML
+    <?xml version="1.0" encoding="UTF-8"?>
+    <GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA86/3.3">
+      <GAEBInfo>
+        <Version>3.3</Version>
+        <VersDate>2021-05</VersDate>
+        <Date>2026-06-15</Date>
+      </GAEBInfo>
+      <PrjInfo>
+        {$prjInfo}
+      </PrjInfo>
+      <Award>
+        <DP>86</DP>
+        <BoQ ID="B1">
+          <BoQInfo>
+            {$boqInfoFields}
+          </BoQInfo>
+          <BoQBody>
+            <BoQCtgy ID="C01" RNoPart="01">
+              {$lblTx}
+              <BoQBody>
+                <Itemlist>
+                  <Item ID="I0010" RNoPart="0010">
+                    {$itemBody}
+                  </Item>
+                </Itemlist>
+              </BoQBody>
+              <Totals><Total>10.00</Total></Totals>
+            </BoQCtgy>
+          </BoQBody>
+        </BoQ>
+      </Award>
+    </GAEB>
+    XML;
+}
+
+function invoiceForDefect(): Invoice
+{
+    return new Invoice('RE-1', '2026-10-31', InvoiceType::Deduction, '2026-09-01', '2026-10-31', 'DE123456789', vatPercent: '19');
+}
+
+it('rejects a billed item with no unit (QU)', function () {
+    $doc = GaebDocument::fromString(minimalX86Contract(itemBody: "<UP>10.00</UP>\n<IT>10.00</IT>"));
+    $invoice = invoiceForDefect()->billQty('01.0010', '1');
+
+    $doc->createInvoice($invoice);
+})->throws(GaebWriteException::class, 'has no unit (QU)');
+
+it('rejects billing a notApplicable item', function () {
+    $doc = GaebDocument::fromString(minimalX86Contract(itemBody: "<QU>m3</QU>\n<UP>10.00</UP>\n<IT>10.00</IT>\n<NotAppl>Yes</NotAppl>"));
+    $invoice = invoiceForDefect()->billQty('01.0010', '1');
+
+    $doc->createInvoice($invoice);
+})->throws(GaebWriteException::class, 'refer to notApplicable items');
+
+it('rejects a billed item with no unit price (UP missing)', function () {
+    $doc = GaebDocument::fromString(minimalX86Contract(itemBody: "<QU>m3</QU>\n<IT>10.00</IT>"));
+    $invoice = invoiceForDefect()->billQty('01.0010', '1');
+
+    $doc->createInvoice($invoice);
+})->throws(GaebWriteException::class, 'no usable unit price in the contract: missing UP');
+
+it('rejects a billed item with a garbage unit price', function () {
+    $doc = GaebDocument::fromString(minimalX86Contract(itemBody: "<QU>m3</QU>\n<UP>garbage</UP>\n<IT>10.00</IT>"));
+    $invoice = invoiceForDefect()->billQty('01.0010', '1');
+
+    $doc->createInvoice($invoice);
+})->throws(GaebWriteException::class, 'no usable unit price in the contract: Value "garbage"');
+
+it('rejects a source category with no LblTx', function () {
+    $doc = GaebDocument::fromString(minimalX86Contract(lblTx: ''));
+    $invoice = invoiceForDefect()->billQty('01.0010', '1');
+
+    $doc->createInvoice($invoice);
+})->throws(GaebWriteException::class, 'has no LblTx');
+
+it('rejects a source BoQInfo missing required fields', function () {
+    $doc = GaebDocument::fromString(minimalX86Contract(boqInfoFields: "<Name>LV</Name>\n<OutlCompl>AllTxt</OutlCompl>"));
+    $invoice = invoiceForDefect()->billQty('01.0010', '1');
+
+    $doc->createInvoice($invoice);
+})->throws(GaebWriteException::class, 'Source BoQInfo is missing required field(s) (Name, LblBoQ, OutlCompl)');
+
+it('rejects a source project with no NamePrj', function () {
+    $doc = GaebDocument::fromString(minimalX86Contract(prjInfo: ''));
+    $invoice = invoiceForDefect()->billQty('01.0010', '1');
+
+    $doc->createInvoice($invoice);
+})->throws(GaebWriteException::class, 'Source project has no name');

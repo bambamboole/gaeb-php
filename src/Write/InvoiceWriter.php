@@ -127,12 +127,11 @@ final class InvoiceWriter
         }
 
         $cnstSite = $out->createElementNS(self::NS, 'CnstSite');
+        // 60-char ceiling is tgNormalizedString60, schema-mandated.
         $cnstSite->appendChild($this->elem($out, 'CnstSiteName', mb_substr((string) $file->project->name, 0, 60)));
         $el->appendChild($cnstSite);
 
-        [$boqEl, $net] = $this->buildBoQ($out, $source, $invoice, $vat);
-        $vatAmount = $net->multipliedBy($vat)->dividedBy(100, 2, RoundingMode::HalfUp);
-        $gross = $net->plus($vatAmount)->toScale(2, RoundingMode::HalfUp);
+        [$boqEl, , $gross] = $this->buildBoQ($out, $source, $invoice, $vat);
         $el->appendChild($boqEl);
 
         $el->appendChild($this->buildInvoiceHeader($out, $invoice));
@@ -142,6 +141,9 @@ final class InvoiceWriter
         $share = $out->createElementNS(self::NS, 'InvoiceShare');
         $share->appendChild($this->elem($out, 'InvoiceShareType', 'basic amount'));
         $share->appendChild($this->elem($out, 'Description', 'Grundbetrag'));
+        // Emitted at GROSS (= TotalGross): GAEB's InvoiceShare annotation is
+        // non-committal on net vs. gross for a single share. Revisit against
+        // the Rechnung Anwendungsdokumentation if multi-share support lands.
         $share->appendChild($this->elem($out, 'Total', (string) $gross));
         $el->appendChild($share);
 
@@ -201,12 +203,13 @@ final class InvoiceWriter
 
     private function buildPaymentMade(XMLDocument $out, Payment $payment): Element
     {
+        $missing = [];
         foreach (['total' => $payment->total, 'totalVat' => $payment->totalVat, 'paymentDate' => $payment->paymentDate, 'invoiceNo' => $payment->invoiceNo] as $field => $value) {
             if ($value === null || $value === '') {
                 $missing[] = $field;
             }
         }
-        if (($missing ?? []) !== []) {
+        if ($missing !== []) {
             throw new GaebWriteException('Payment is missing required field(s): '.implode(', ', $missing));
         }
 
@@ -237,7 +240,7 @@ final class InvoiceWriter
         }
     }
 
-    /** @return array{Element, BigDecimal} */
+    /** @return array{Element, BigDecimal, BigDecimal} net and gross totals, so callers never recompute VAT/gross themselves */
     private function buildBoQ(XMLDocument $out, XMLDocument $source, Invoice $invoice, BigDecimal $vat): array
     {
         $srcRoot = $source->documentElement;
@@ -294,7 +297,7 @@ final class InvoiceWriter
         $boq->appendChild($boqInfo);
         $boq->appendChild($bodyEl);
 
-        return [$boq, $net];
+        return [$boq, $net, $gross];
     }
 
     /** @return array{?Element, BigDecimal} */
