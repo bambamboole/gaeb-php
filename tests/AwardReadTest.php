@@ -14,6 +14,11 @@ it('parses the contractor party from an X84 bid', function () {
         ->and($gaeb->contractor->phone)->toBeNull()
         ->and($gaeb->contractor->email)->toBeNull()
         ->and($gaeb->owner)->toBeNull();
+
+    $priced = GaebParser::fromFile(__DIR__.'/fixtures/priced.x84');
+    expect($priced->contractor)->not->toBeNull()
+        ->and($priced->contractor->name)->toBe('Musterbau GmbH')
+        ->and($priced->owner)->toBeNull();
 });
 
 it('yields null parties when OWN and CTR are absent', function () {
