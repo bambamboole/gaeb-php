@@ -3,6 +3,7 @@
 namespace Bambamboole\GaebParser\Write;
 
 use Bambamboole\GaebParser\Dto\Contractor;
+use Bambamboole\GaebParser\GaebWriteException;
 
 final class Bid
 {
@@ -19,7 +20,11 @@ final class Bid
         public readonly Contractor $contractor,
         public readonly ?string $currency = null,
         public readonly ?string $date = null,
-    ) {}
+    ) {
+        if ($date !== null && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) !== 1) {
+            throw new GaebWriteException("Invalid Bid date '{$date}'; expected YYYY-MM-DD.");
+        }
+    }
 
     public function setUnitPrice(string $rNo, float $unitPrice): self
     {

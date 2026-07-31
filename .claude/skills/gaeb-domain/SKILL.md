@@ -184,9 +184,10 @@ preserved in `Item->descriptionXml` for consumers needing formatting.
 
 `GaebDocument::createBid(Bid $bid)` builds a **new** X84 DOM by walking the
 source X81/X83 DOM (`src/Write/BidWriter.php`, `@internal`) — derived from
-source, never mutating it: every `ID`, `RNoPart`, and `Qty` is copied
-verbatim from the source, not regenerated. The `Bid` only supplies what
-changed: `UP`, filled `TextComplement`s, `BidComm`.
+source, never mutating it: `ID` and `RNoPart` are copied verbatim from the
+source; `Qty` is re-emitted, normalized to 3 decimals
+(`number_format($qty, 3, '.', '')`), not copied verbatim. The `Bid` only
+supplies what changed: `UP`, filled `TextComplement`s, `BidComm`.
 
 Schema findings from the X84 + Lib XSDs (verified with xmllint, re-confirmed
 against `priced.x84`/`realistic.x84` while implementing the writer):

@@ -48,10 +48,8 @@ final class GaebDocument
         return new self($dom, $content);
     }
 
-    /**
-     * @internal used by createBid for derived documents
-     */
-    public static function fromDom(\DOMDocument $dom): self
+    /** used by createBid for derived documents */
+    private static function fromDom(\DOMDocument $dom): self
     {
         return new self($dom, null);
     }
@@ -110,6 +108,12 @@ final class GaebDocument
     /** Transforms this X81/X83 tender into a new X84 bid document. */
     public function createBid(Bid $bid): self
     {
+        $phase = $this->phase();
+        if ($phase === null || $phase < 81 || $phase > 83) {
+            $got = $phase === null ? 'none' : "X{$phase}";
+            throw new GaebWriteException("createBid requires an X81–X83 source, got {$got}");
+        }
+
         return self::fromDom((new BidWriter)->write($this->dom, $this->file(), $bid));
     }
 }

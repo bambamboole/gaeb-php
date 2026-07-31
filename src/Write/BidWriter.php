@@ -6,6 +6,7 @@ use Bambamboole\GaebParser\Dto\Contractor;
 use Bambamboole\GaebParser\Dto\GaebFile;
 use Bambamboole\GaebParser\Dto\Item;
 use Bambamboole\GaebParser\Dto\Provisional;
+use Bambamboole\GaebParser\Dto\TextComplementKind;
 use Bambamboole\GaebParser\GaebWriteException;
 use Bambamboole\GaebParser\Xml\Dom;
 
@@ -29,6 +30,8 @@ final class BidWriter
 
         $this->assertPricesComplete($itemsByRNo, $bid);
         $this->assertKnownRNos($itemsByRNo, $bid);
+        $this->assertNoNotApplicableReferences($itemsByRNo, $bid);
+        $this->assertGapFillsMatchComplements($itemsByRNo, $bid);
 
         $out = new \DOMDocument('1.0', 'UTF-8');
         $out->formatOutput = true;
@@ -71,6 +74,51 @@ final class BidWriter
         }
     }
 
+    /** @param array<string, Item> $itemsByRNo */
+    private function assertNoNotApplicableReferences(array $itemsByRNo, Bid $bid): void
+    {
+        $referenced = [
+            ...array_keys($bid->prices()),
+            ...array_keys($bid->gapFills()),
+            ...array_keys($bid->comments()),
+        ];
+        $notApplicable = [];
+        foreach (array_unique($referenced) as $rNo) {
+            if ($itemsByRNo[$rNo]->notApplicable ?? false) {
+                $notApplicable[] = $rNo;
+            }
+        }
+        if ($notApplicable !== []) {
+            throw new GaebWriteException('rNo(s) refer to notApplicable items: '.implode(', ', $notApplicable));
+        }
+    }
+
+    /** @param array<string, Item> $itemsByRNo */
+    private function assertGapFillsMatchComplements(array $itemsByRNo, Bid $bid): void
+    {
+        $invalid = [];
+        foreach ($bid->gapFills() as $rNo => $markLabels) {
+            $item = $itemsByRNo[$rNo] ?? null;
+            if ($item === null) {
+                continue; // already reported by assertKnownRNos
+            }
+            $bidderMarkLabels = [];
+            foreach ($item->textComplements as $complement) {
+                if ($complement->kind === TextComplementKind::Bidder) {
+                    $bidderMarkLabels[$complement->markLabel] = true;
+                }
+            }
+            foreach (array_keys($markLabels) as $markLabel) {
+                if (! isset($bidderMarkLabels[$markLabel])) {
+                    $invalid[] = "{$rNo} markLabel {$markLabel}";
+                }
+            }
+        }
+        if ($invalid !== []) {
+            throw new GaebWriteException('Gap fill(s) reference markLabel(s) with no matching Bidder complement: '.implode(', ', $invalid));
+        }
+    }
+
     private function buildGaebInfo(\DOMDocument $out, Bid $bid): \DOMElement
     {
         $info = $out->createElementNS(self::NS, 'GAEBInfo');
@@ -104,12 +152,13 @@ final class BidWriter
         $award = $out->createElementNS(self::NS, 'Award');
         $award->appendChild($out->createElementNS(self::NS, 'DP', '84'));
 
-        $currency = $bid->currency ?? $file->project->currency;
-        if ($currency !== null) {
-            $awardInfo = $out->createElementNS(self::NS, 'AwardInfo');
-            $awardInfo->appendChild($out->createElementNS(self::NS, 'Cur', $currency));
-            $award->appendChild($awardInfo);
+        $currency = $bid->currency ?? $file->project->currency ?? $file->boq?->currency;
+        if ($currency === null) {
+            throw new GaebWriteException('no currency found in source — set Bid::$currency');
         }
+        $awardInfo = $out->createElementNS(self::NS, 'AwardInfo');
+        $awardInfo->appendChild($out->createElementNS(self::NS, 'Cur', $currency));
+        $award->appendChild($awardInfo);
 
         $award->appendChild($this->buildCTR($out, $bid->contractor));
         $award->appendChild($this->buildBoQ($out, $source, $file, $bid, $itemsByRNo));
@@ -287,7 +336,9 @@ final class BidWriter
                 continue;
             }
 
-            $up = $bid->prices()[$rNo];
+            // Round to the emitted precision first so UP x Qty == IT holds
+            // in the document a consumer actually reads back.
+            $up = round($bid->prices()[$rNo], 3);
             $it = $item->qty !== null ? round($item->qty * $up, 2) : round($up, 2);
 
             $itemEl = $out->createElementNS(self::NS, 'Item');

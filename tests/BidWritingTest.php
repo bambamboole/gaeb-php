@@ -209,3 +209,161 @@ it('throws on unknown rNo', function () {
 
     $doc->createBid($bid);
 })->throws(GaebWriteException::class, '99.9999');
+
+it('rounds the unit price before computing IT so emitted UP x Qty == IT exactly', function () {
+    $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
+    $bid = makeBid();
+    priceAll($doc, $bid);
+    $bid->setUnitPrice('01.02.0010', 12.3456); // qty 100.000
+
+    $parsed = GaebParser::fromString($doc->createBid($bid)->toString());
+    $item = null;
+    foreach ($parsed->boq->allItems() as $candidate) {
+        if ($candidate->rNo === '01.02.0010') {
+            $item = $candidate;
+        }
+    }
+
+    expect($item)->not->toBeNull()
+        ->and($item->unitPrice)->toBe(12.346)
+        ->and(round($item->qty * $item->unitPrice, 2))->toBe($item->totalPrice);
+});
+
+it('throws when a priced/commented/gap-filled rNo resolves to a notApplicable item', function () {
+    $source = <<<'XML'
+    <?xml version="1.0" encoding="UTF-8"?>
+    <GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA83/3.3">
+      <GAEBInfo><Version>3.3</Version><VersDate>2021-05</VersDate><Date>2024-01-15</Date></GAEBInfo>
+      <PrjInfo><NamePrj>PRJ-NA</NamePrj><Cur>EUR</Cur></PrjInfo>
+      <Award>
+        <DP>83</DP>
+        <AwardInfo><Cur>EUR</Cur></AwardInfo>
+        <BoQ ID="B1">
+          <BoQInfo>
+            <Name>LV-NA</Name>
+            <BoQBkdn><Type>Item</Type><Length>4</Length><Num>Yes</Num></BoQBkdn>
+          </BoQInfo>
+          <BoQBody>
+            <Itemlist>
+              <Item ID="I1" RNoPart="0010">
+                <NotAppl>Yes</NotAppl>
+                <Qty>5.000</Qty>
+                <QU>m</QU>
+              </Item>
+              <Item ID="I2" RNoPart="0020">
+                <Qty>2.000</Qty>
+                <QU>m</QU>
+              </Item>
+            </Itemlist>
+          </BoQBody>
+        </BoQ>
+      </Award>
+    </GAEB>
+    XML;
+    $doc = GaebDocument::fromString($source);
+    $bid = makeBid();
+    $bid->setUnitPrice('0020', 1.0);
+    $bid->setComment('0010', 'this should not be allowed');
+
+    $doc->createBid($bid);
+})->throws(GaebWriteException::class, '0010');
+
+it('throws when a gap fill markLabel has no matching Bidder complement on the source item', function () {
+    $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
+    $bid = makeBid();
+    priceAll($doc, $bid);
+    $bid->fillGap('01.02.0010', 99, 'phantom');
+
+    $doc->createBid($bid);
+})->throws(GaebWriteException::class, '01.02.0010 markLabel 99');
+
+it('throws when no currency can be found anywhere in the source', function () {
+    $source = <<<'XML'
+    <?xml version="1.0" encoding="UTF-8"?>
+    <GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA83/3.3">
+      <GAEBInfo><Version>3.3</Version><VersDate>2021-05</VersDate><Date>2024-01-15</Date></GAEBInfo>
+      <PrjInfo><NamePrj>PRJ-NOCUR</NamePrj></PrjInfo>
+      <Award>
+        <DP>83</DP>
+        <BoQ ID="B1">
+          <BoQInfo>
+            <Name>LV-NOCUR</Name>
+            <BoQBkdn><Type>Item</Type><Length>4</Length><Num>Yes</Num></BoQBkdn>
+          </BoQInfo>
+          <BoQBody>
+            <Itemlist>
+              <Item ID="I1" RNoPart="0010">
+                <Qty>2.000</Qty>
+                <QU>m</QU>
+              </Item>
+            </Itemlist>
+          </BoQBody>
+        </BoQ>
+      </Award>
+    </GAEB>
+    XML;
+    $doc = GaebDocument::fromString($source);
+    $bid = makeBid();
+    $bid->setUnitPrice('0010', 1.0);
+
+    $doc->createBid($bid);
+})->throws(GaebWriteException::class, 'no currency found in source');
+
+it('succeeds without a source currency when Bid::$currency is set', function () {
+    $source = <<<'XML'
+    <?xml version="1.0" encoding="UTF-8"?>
+    <GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA83/3.3">
+      <GAEBInfo><Version>3.3</Version><VersDate>2021-05</VersDate><Date>2024-01-15</Date></GAEBInfo>
+      <PrjInfo><NamePrj>PRJ-NOCUR</NamePrj></PrjInfo>
+      <Award>
+        <DP>83</DP>
+        <BoQ ID="B1">
+          <BoQInfo>
+            <Name>LV-NOCUR</Name>
+            <BoQBkdn><Type>Item</Type><Length>4</Length><Num>Yes</Num></BoQBkdn>
+          </BoQInfo>
+          <BoQBody>
+            <Itemlist>
+              <Item ID="I1" RNoPart="0010">
+                <Qty>2.000</Qty>
+                <QU>m</QU>
+              </Item>
+            </Itemlist>
+          </BoQBody>
+        </BoQ>
+      </Award>
+    </GAEB>
+    XML;
+    $doc = GaebDocument::fromString($source);
+    $bid = new Bid(new Contractor(
+        name: 'Muster Bau GmbH',
+        street: 'Handwerkerweg 1',
+        zip: '53179',
+        city: 'Bonn',
+        email: 'bau@example.test',
+        phone: null,
+    ), currency: 'EUR');
+    $bid->setUnitPrice('0010', 1.0);
+
+    $parsed = GaebParser::fromString($doc->createBid($bid)->toString());
+
+    expect($parsed->project->currency)->toBe('EUR');
+});
+
+it('throws when the source phase is not X81-X83', function () {
+    $doc = GaebDocument::open(__DIR__.'/fixtures/priced.x84');
+    $bid = makeBid();
+
+    $doc->createBid($bid);
+})->throws(GaebWriteException::class, 'createBid requires an X81–X83 source, got X84');
+
+it('throws when the Bid date is not in YYYY-MM-DD format', function () {
+    new Bid(new Contractor(
+        name: 'Muster Bau GmbH',
+        street: 'Handwerkerweg 1',
+        zip: '53179',
+        city: 'Bonn',
+        email: 'bau@example.test',
+        phone: null,
+    ), date: '02/01/2020');
+})->throws(GaebWriteException::class, "Invalid Bid date '02/01/2020'");
