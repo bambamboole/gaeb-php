@@ -165,7 +165,7 @@ it('stamps a custom progSystem and defaults to the package name', function () {
 
     $bid = makeBid();
     priceAll($doc, $bid);
-    expect($doc->createBid($bid)->toString())->toContain('<ProgSystem>bambamboole/gaeb-php</ProgSystem>');
+    expect($doc->createBid($bid)->toString())->toContain('<ProgSystem>bambamboole/gaeb</ProgSystem>');
 
     $custom = new Bid($bid->contractor, progSystem: 'my-erp 1.0');
     priceAll($doc, $custom);

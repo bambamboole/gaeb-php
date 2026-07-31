@@ -10,7 +10,7 @@ Writing is strict — see ["Writing a bid (X84)"](#writing-a-bid-x84) and
 ## Install
 
 ```bash
-composer require bambamboole/gaeb-php
+composer require bambamboole/gaeb
 ```
 
 Requires PHP `^8.4` and the `ext-dom` extension (usually bundled) plus
@@ -107,7 +107,7 @@ $bid = new Bid($contractor, currency: 'EUR', date: '2026-07-31');
 // currency defaults to the source's currency, date defaults to today —
 // pass both explicitly for a byte-deterministic output.
 // progSystem: 'my-erp 1.0' overrides the <ProgSystem> stamp
-// (default 'bambamboole/gaeb-php'); Invoice takes the same option.
+// (default 'bambamboole/gaeb'); Invoice takes the same option.
 
 $bid->setUnitPrice('01.02.0010', '12.50')   // decimal strings are exact, floats convenient
     ->fillGap('01.02.0010', 1, 'Musterhersteller GmbH')

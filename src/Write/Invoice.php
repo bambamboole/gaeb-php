@@ -29,7 +29,7 @@ final class Invoice
         public readonly ?string $date = null,
         public readonly ?int $sequentialNo = null,
         public readonly bool $creditNote = false,
-        public readonly string $progSystem = 'bambamboole/gaeb-php',
+        public readonly string $progSystem = 'bambamboole/gaeb',
     ) {
         if ($invoiceNo === '') {
             throw new GaebWriteException('invoiceNo must not be empty');

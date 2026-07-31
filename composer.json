@@ -1,5 +1,5 @@
 {
-    "name": "bambamboole/gaeb-php",
+    "name": "bambamboole/gaeb",
     "description": "A small PHP library to parse, write and validate GAEB DA XML 3.3 files.",
     "keywords": ["bambamboole", "gaeb", "xml", "parser", "writer", "ava", "boq"],
     "license": "MIT",
