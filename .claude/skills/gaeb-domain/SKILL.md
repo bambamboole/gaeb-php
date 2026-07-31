@@ -104,6 +104,59 @@ More wild-file traps:
 - `MarkupItem` (surcharge items) exist in real files and are silently
   skipped (documented as out of scope in the README).
 
+## Text complements (Bieterlücken)
+
+`TextComplement` elements (`tgTextComplement` in the Lib XSD) are gaps
+embedded directly inside an item's rich text, authored by one side and
+filled in by the other. They live as siblings of the running text, not
+wrapped inside it:
+
+- Short text: inside `OutlTxt`, alongside `TextOutlTxt` (`Lib` ~2196).
+- Long text: inside `DetailTxt`, alongside `Text` (`Lib` ~3180).
+
+Attributes: `MarkLbl` (integer, the marker referenced from the surrounding
+prose), `Kind` (`Owner` — the tendering office authored/filled this, or
+`Bidder` — the bidder must fill this). Children: `ComplCaption` (text before
+the gap), `ComplBody` (the gap's content — empty/self-closing when unfilled),
+`ComplTail` (text after the gap). `ComplTSA`/`ComplTSB` are redundant
+summary flags ("this text has owner/bidder complements") mirroring what a
+consumer can already derive from the parsed list — skipped.
+
+The parser flattens `DetailTxt` as a whole for `Item->longText`, so a
+complement's caption/body/tail paragraphs end up concatenated into
+`longText` alongside the plain `Text` runs, in document order. Consumers who
+want the two concerns apart use `textComplements` for the gaps and treat
+`longText` as the merged prose.
+
+### Phase-restriction findings (verified with xmllint against the 3.3
+2021-05 phase XSDs, `tests/fixtures/boq.x83` and `realistic.x84` iterated
+until clean)
+
+- **X83** keeps `tgTextComplement` essentially unrestricted: `ComplCaption`,
+  the `ComplBodyDec`/`ComplBodyInt` choice, `ComplBody`, `ComplTail` all
+  survive, `Kind` still accepts both `Owner` and `Bidder`. X83's `tgItem`
+  has **no `BidComm` element at all** — bidder comments only exist on the
+  X84 (bid-submission) side. X83's `tgSubDescr` has no `UP` — only the
+  `UPSpec`/`UPBkdn` yes/no flags — so `SubDescription->unitPrice` can only
+  ever be populated from an X84 (or later) fixture.
+- **X84** restricts `tgTextComplement` to drop `ComplCaption` and
+  `ComplTail` entirely — only the `ComplBodyDec`/`ComplBodyInt` choice and
+  `ComplBody` remain. A filled X84 gap therefore always has `caption` and
+  `tail` as `null`, only `body` set. X84's `tgItem` does carry `BidComm`
+  (unbounded) and `SubDescr` (with a real `UP`, unlike X83). X84's
+  restricted `tgSubDescr` also drops `QU` entirely — a sub-description's
+  `unit` stays `null` on the bid-submission side; the parent item's own
+  `QU` already fixes the unit for the whole item.
+- **X84 surprise**: `tgpTC` (the `<p>` type used inside `Text`/`DetailTxt`
+  runs) is restricted to a choice of **only `TextComplement`** — `span`,
+  `br`, and `image` are all dropped. In other words, X84 bid items cannot
+  carry new narrative long text at all (`<Text><p><span>…` is
+  schema-invalid there); a bid submission can only reference the LV's
+  existing long text and fill in `TextComplement` gaps against it. This
+  applies to `SubDescr/Description` too, which is why `realistic.x84`'s
+  priced sub-description omits `Description` entirely rather than trying
+  to give it a long text.
+
 ## Position numbers (rNo)
 
 `rNo` = the `RNoPart` of every ancestor `BoQCtgy` plus the item's own

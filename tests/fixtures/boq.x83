@@ -33,12 +33,36 @@
                       <CompleteText>
                         <DetailTxt>
                           <Text><p><span>Boden loesen und lagern.</span></p><p><span>Bodenklasse 3-5.</span></p></Text>
+                          <TextComplement MarkLbl="1" Kind="Owner">
+                            <ComplCaption><p><span>Bodenklasse:</span></p></ComplCaption>
+                            <ComplBody><p><span>3-5</span></p></ComplBody>
+                            <ComplTail><p><span>(gemaess Bodengutachten)</span></p></ComplTail>
+                          </TextComplement>
+                          <TextComplement MarkLbl="2" Kind="Bidder" Empty="Yes">
+                            <ComplBody/>
+                          </TextComplement>
                         </DetailTxt>
                         <OutlineText>
                           <OutlTxt><TextOutlTxt><p><span>Boden loesen</span></p></TextOutlTxt></OutlTxt>
                         </OutlineText>
                       </CompleteText>
                     </Description>
+                    <SumDescr>Yes</SumDescr>
+                    <SubDescr>
+                      <SubDNo>1</SubDNo>
+                      <Description>
+                        <CompleteText>
+                          <DetailTxt>
+                            <Text><p><span>Trockener Boden je m3.</span></p></Text>
+                          </DetailTxt>
+                          <OutlineText>
+                            <OutlTxt><TextOutlTxt><p><span>Trockener Boden</span></p></TextOutlTxt></OutlTxt>
+                          </OutlineText>
+                        </CompleteText>
+                      </Description>
+                      <Qty>60.000</Qty>
+                      <QU>m3</QU>
+                    </SubDescr>
                   </Item>
                   <Item ID="I0020" RNoPart="0020">
                     <LumpSumItem>Yes</LumpSumItem>

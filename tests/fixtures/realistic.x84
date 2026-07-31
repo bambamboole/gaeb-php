@@ -52,9 +52,20 @@
                 <IT>2275.00</IT>
                 <Description>
                   <CompleteText>
-                    <DetailTxt/>
+                    <DetailTxt>
+                      <TextComplement MarkLbl="1" Kind="Bidder">
+                        <ComplBody><p><span>Fabrikat: Muster GmbH, Typ ABC-500</span></p></ComplBody>
+                      </TextComplement>
+                    </DetailTxt>
                   </CompleteText>
                 </Description>
+                <BidComm><p><span>Lieferzeit 4 Wochen ab Auftrag</span></p></BidComm>
+                <BidComm><p><span>Alternative Ausfuehrung auf Anfrage</span></p></BidComm>
+                <SubDescr>
+                  <SubDNo>1</SubDNo>
+                  <Qty>5.000</Qty>
+                  <UP>18.750</UP>
+                </SubDescr>
               </Item>
               <Item ID="I0010v1" RNoPart="0010" RNoIndex="1">
                 <Qty>12.000</Qty>

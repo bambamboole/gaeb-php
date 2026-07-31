@@ -50,6 +50,23 @@ separately from the main sum.
 `discountPercent`, `discountAmount`, `totalAfterDiscount`, `vat`, `vatAmount`,
 `totalNet`, `totalGross`.
 
+## Bid data
+
+Each `Item` also carries three bid-related fields. `textComplements`
+(`list<TextComplement>`) are the Bieterlücken — gaps embedded in the short/long
+text that either the tendering office fills in (`TextComplementKind::Owner`)
+or the bidder must fill in (`TextComplementKind::Bidder`). `bidderComment` is
+every `BidComm` on the item flattened and joined with `"\n"` (`null` when
+absent). `subDescriptions` (`list<SubDescription>`) are the item's
+`SubDescr` children, each with its own `subDNo`, `shortText`/`longText`/
+`descriptionXml`, `qty`, `unit`, and `unitPrice`.
+
+Find the gaps a bidder still needs to fill:
+
+```php
+$gaps = array_filter($item->textComplements, fn ($c) => $c->kind === TextComplementKind::Bidder);
+```
+
 ## Custom drivers / instance API
 
 `GaebParser::fromFile()`/`::fromString()` are shortcuts for `new GaebParser`.

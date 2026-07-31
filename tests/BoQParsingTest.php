@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 
 use Bambamboole\GaebParser\Dto\Provisional;
+use Bambamboole\GaebParser\Dto\TextComplementKind;
 use Bambamboole\GaebParser\GaebParser;
 
 it('returns null boq when the file has none', function () {
@@ -36,7 +37,10 @@ it('parses items with quantities, texts and flags', function () {
         ->and($first->qty)->toBe(100.0)
         ->and($first->unit)->toBe('m3')
         ->and($first->shortText)->toBe('Boden loesen')
-        ->and($first->longText)->toBe("Boden loesen und lagern.\nBodenklasse 3-5.")
+        // longText flattens ALL <p> descendants of DetailTxt, including the
+        // TextComplement caption/body/tail runs authored below — the driver
+        // does not exclude complements from the plain-text long text.
+        ->and($first->longText)->toBe("Boden loesen und lagern.\nBodenklasse 3-5.\nBodenklasse:\n3-5\n(gemaess Bodengutachten)")
         ->and($first->descriptionXml)->toContain('<DetailTxt>')
         ->and($first->unitPrice)->toBeNull()
         ->and($first->lumpSum)->toBeFalse();
@@ -46,7 +50,50 @@ it('parses items with quantities, texts and flags', function () {
         ->and($second->unit)->toBe('psch')
         ->and($second->shortText)->toBe('Baustelle einrichten')
         ->and($second->longText)->toBeNull()
-        ->and($second->lumpSum)->toBeTrue();
+        ->and($second->lumpSum)->toBeTrue()
+        ->and($second->textComplements)->toBe([])
+        ->and($second->bidderComment)->toBeNull()
+        ->and($second->subDescriptions)->toBe([]);
+});
+
+it('parses bid data on the owner-authored item: text complements and a sub-description', function () {
+    $boq = GaebParser::fromFile(__DIR__.'/fixtures/boq.x83')->boq;
+    $item = $boq->categories[0]->categories[0]->items[0];
+
+    expect($item->rNo)->toBe('01.02.0010')
+        ->and($item->textComplements)->toHaveCount(2);
+
+    [$owner, $bidder] = $item->textComplements;
+    expect($owner->markLabel)->toBe(1)
+        ->and($owner->kind)->toBe(TextComplementKind::Owner)
+        ->and($owner->caption)->toBe('Bodenklasse:')
+        ->and($owner->body)->toBe('3-5')
+        ->and($owner->tail)->toBe('(gemaess Bodengutachten)');
+
+    // The bidder's gap: empty ComplBody (nothing to flatten), no caption/tail.
+    expect($bidder->markLabel)->toBe(2)
+        ->and($bidder->kind)->toBe(TextComplementKind::Bidder)
+        ->and($bidder->caption)->toBeNull()
+        ->and($bidder->body)->toBeNull()
+        ->and($bidder->tail)->toBeNull();
+
+    // X83's restricted Item type has no BidComm element at all (verified with
+    // xmllint against GAEB_DA_XML_83_3.3_2021-05.xsd) — bidder comments only
+    // exist on the X84 bid-submission side.
+    expect($item->bidderComment)->toBeNull();
+
+    expect($item->subDescriptions)->toHaveCount(1);
+    $sub = $item->subDescriptions[0];
+    expect($sub->subDNo)->toBe('1')
+        ->and($sub->shortText)->toBe('Trockener Boden')
+        ->and($sub->longText)->toBe('Trockener Boden je m3.')
+        ->and($sub->descriptionXml)->toContain('Trockener Boden je m3.')
+        ->and($sub->qty)->toBe(60.0)
+        ->and($sub->unit)->toBe('m3')
+        // X83's restricted tgSubDescr carries only UPSpec/UPBkdn (yes/no
+        // flags), never a real UP element — that only exists in X84's
+        // tgSubDescr (verified with xmllint), so unitPrice stays null here.
+        ->and($sub->unitPrice)->toBeNull();
 });
 
 it('parses item classification flags', function () {
