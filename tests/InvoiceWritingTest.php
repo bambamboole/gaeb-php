@@ -4,6 +4,7 @@ use Bambamboole\GaebParser\Dto\InvoiceType;
 use Bambamboole\GaebParser\Dto\Payment;
 use Bambamboole\GaebParser\Dto\SettlementType;
 use Bambamboole\GaebParser\GaebDocument;
+use Bambamboole\GaebParser\GaebWriteException;
 use Bambamboole\GaebParser\Write\Invoice;
 
 function contractDocument(): GaebDocument
@@ -79,3 +80,50 @@ it('bills a subset of items without touching the rest', function () {
         ->and($items[0]->totalPrice)->toBe(568.75)  // 12.5 x 45.500
         ->and($gaeb->boq->total)->toBe(568.75);
 });
+
+it('rejects unknown rNos', function () {
+    $invoice = new Invoice('RE-1', '2026-10-31', InvoiceType::Deduction, '2026-09-01', '2026-10-31', 'DE123456789', vatPercent: '19');
+    $invoice->billQty('99.9999', '1');
+
+    contractDocument()->createInvoice($invoice);
+})->throws(GaebWriteException::class, 'Unknown rNo');
+
+it('rejects an invoice with no billed items', function () {
+    $invoice = new Invoice('RE-1', '2026-10-31', InvoiceType::Deduction, '2026-09-01', '2026-10-31', 'DE123456789', vatPercent: '19');
+
+    contractDocument()->createInvoice($invoice);
+})->throws(GaebWriteException::class, 'bills no items');
+
+it('rejects a non-X86 source', function () {
+    $invoice = new Invoice('RE-1', '2026-10-31', InvoiceType::Deduction, '2026-09-01', '2026-10-31', 'DE123456789', vatPercent: '19');
+    $invoice->billQty('01.0010', '1');
+
+    GaebDocument::open(__DIR__.'/fixtures/boq.x83')->createInvoice($invoice);
+})->throws(GaebWriteException::class, 'requires an X86 source');
+
+it('rejects a missing VAT rate instead of defaulting', function () {
+    // contract.x86's Totals carries no VAT element and no override is given
+    $invoice = new Invoice('RE-1', '2026-10-31', InvoiceType::Deduction, '2026-09-01', '2026-10-31', 'DE123456789');
+    $invoice->billQty('01.0010', '1');
+
+    contractDocument()->createInvoice($invoice);
+})->throws(GaebWriteException::class, 'No VAT rate');
+
+it('rejects garbage quantities, empty identifiers and bad dates at the builder', function () {
+    expect(fn () => (new Invoice('RE-1', '2026-10-31', InvoiceType::Deduction, '2026-09-01', '2026-10-31', 'DE123456789'))->billQty('01.0010', 'thirty'))
+        ->toThrow(GaebWriteException::class, 'Invalid billed quantity');
+    expect(fn () => new Invoice('', '2026-10-31', InvoiceType::Deduction, '2026-09-01', '2026-10-31', 'DE123456789'))
+        ->toThrow(GaebWriteException::class, 'invoiceNo');
+    expect(fn () => new Invoice('RE-1', '2026-10-31', InvoiceType::Deduction, '2026-09-01', '2026-10-31', ''))
+        ->toThrow(GaebWriteException::class, 'creatorTaxNo');
+    expect(fn () => new Invoice('RE-1', 'Halloween', InvoiceType::Deduction, '2026-09-01', '2026-10-31', 'DE123456789'))
+        ->toThrow(GaebWriteException::class);
+});
+
+it('rejects payments missing required fields', function () {
+    $invoice = new Invoice('RE-1', '2026-10-31', InvoiceType::Deduction, '2026-09-01', '2026-10-31', 'DE123456789', vatPercent: '19');
+    $invoice->billQty('01.0010', '1')
+        ->addPayment(new Payment(total: '1190.00', totalVat: null, discountAmount: null, paymentDate: null, invoiceNo: 'RE-0'));
+
+    contractDocument()->createInvoice($invoice);
+})->throws(GaebWriteException::class, 'Payment is missing required field(s): totalVat, paymentDate');

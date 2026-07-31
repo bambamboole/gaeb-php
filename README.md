@@ -131,6 +131,40 @@ wild-file spellings; writing refuses to guess — anything that would corrupt
 or invalidate the bid (a missing price, an unknown `rNo`) throws
 `GaebWriteException` instead of silently producing a bad file.
 
+### Writing an X89 invoice from a contract
+
+```php
+use Bambamboole\GaebParser\Dto\InvoiceType;
+use Bambamboole\GaebParser\Dto\Payment;
+use Bambamboole\GaebParser\GaebDocument;
+use Bambamboole\GaebParser\Write\Invoice;
+
+$contract = GaebDocument::open('contract.x86');
+
+$invoice = new Invoice(
+    invoiceNo: 'RE-2026-001',
+    invoiceDate: '2026-10-31',
+    type: InvoiceType::Deduction,           // Abschlagsrechnung
+    servicePeriodStart: '2026-09-01',
+    servicePeriodEnd: '2026-10-31',
+    creatorTaxNo: 'DE123456789',
+    vatPercent: '19',                       // falls back to the contract's Totals/VAT
+);
+$invoice->billQty('01.0010', '30')          // CUMULATIVE billed quantities
+    ->addPayment(new Payment(               // prior payments, emitted as PaymentMade
+        total: '1190.00', totalVat: '190.00',
+        discountAmount: null,
+        paymentDate: '2026-10-05', invoiceNo: 'RE-2026-000',
+    ));
+
+$x89 = $contract->createInvoice($invoice);  // new GaebDocument, source untouched
+$x89->validate();                           // [] — schema-valid against the official X89 XSD
+```
+
+Reading X89 files works through the same parser: `$gaeb->invoice` carries the
+header, parties (with tax number), payments and gross total; billed items
+appear in the BoQ with `Item->billedQty`.
+
 `GaebDocument::validate(?string $xsdDir = null): array` schema-checks the
 document against the XSDs bundled in the package
 (`docs/gaeb/3.3/2021-05_Leistungsverzeichnis/`, resolved by the document's

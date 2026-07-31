@@ -14,6 +14,11 @@ all project names, texts, and numbers are invented for this test suite.
 parties, `AwardInfo` contract/bid/construction/warranty data, and the
 awarded BoQ, all self-authored and schema-valid.
 
+`invoice.x89` is a synthetic X89 cumulative progress invoice (Abschlagsrechnung)
+derived from `contract.x86`, demonstrating the invoice write path with a
+known money chain: 2565.00 net / 487.35 VAT (19%) / 3052.35 gross total;
+self-authored and schema-valid.
+
 ## Schema validity
 
 `minimal.x83`, `boq.x83`, `priced.x84`, `realistic.x84`, and
