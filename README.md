@@ -1,9 +1,10 @@
 # gaeb-parser
 
 A small PHP library that parses [GAEB DA XML](https://www.gaeb.de/) 3.3 files
-(exchange phases X81–X86) into a typed, readonly PHP object graph. Read-only
-and lenient — missing optional elements simply become `null` instead of
-throwing.
+(exchange phases X81–X86) into a typed, readonly PHP object graph, and writes
+schema-valid X84 bids back out. Reading is lenient — missing optional
+elements simply become `null` instead of throwing. Writing is strict — see
+["Writing a bid (X84)"](#writing-a-bid-x84) below.
 
 ## Install
 
@@ -67,6 +68,65 @@ Find the gaps a bidder still needs to fill:
 $gaps = array_values(array_filter($item->textComplements, fn ($c) => $c->kind === TextComplementKind::Bidder));
 ```
 
+## Writing a bid (X84)
+
+`GaebDocument` opens a received tender (X81/X83) and turns it into a new,
+schema-valid X84 bid — the source document is never mutated. Collect the
+bid's prices, filled bidder text gaps, and comments on a `Bid` builder, then
+transform:
+
+```php
+use Bambamboole\GaebParser\GaebDocument;
+use Bambamboole\GaebParser\Write\Bid;
+use Bambamboole\GaebParser\Dto\Contractor;
+
+$tender = GaebDocument::open('tender.x83');
+
+$contractor = new Contractor(
+    name: 'ACME Bau GmbH',
+    street: 'Musterstraße 1',
+    zip: '12345',
+    city: 'Berlin',
+    email: 'info@acme.example',
+    phone: '+49 30 1234567',
+);
+
+$bid = new Bid($contractor, currency: 'EUR', date: '2026-07-31');
+// currency defaults to the source's currency, date defaults to today —
+// pass both explicitly for a byte-deterministic output.
+
+$bid->setUnitPrice('01.02.0010', 12.50)
+    ->fillGap('01.02.0010', 1, 'Musterhersteller GmbH')
+    ->setComment('01.02.0010', 'Lieferzeit 4 Wochen');
+// ...one setUnitPrice() per priceable item (every item that isn't marked
+// notApplicable) — createBid() throws GaebWriteException naming any that's
+// missing a price, or any rNo it doesn't recognize.
+
+$award = $tender->createBid($bid);
+
+$errors = $award->validate();   // [] means schema-valid
+if ($errors !== []) {
+    throw new RuntimeException(implode("\n", $errors));
+}
+
+file_put_contents('bid.x84', (string) $award);
+```
+
+The computed `BoQ` total sums each emitted item's `IT`, excluding
+`Provisional::WithoutTotal` items and non-base alternatives
+(`alternativeGroupNo` set with `alternativeSerialNo !== 1`); `notApplicable`
+items are never emitted at all. Reading tolerates schema deviations and
+wild-file spellings; writing refuses to guess — anything that would corrupt
+or invalidate the bid (a missing price, an unknown `rNo`) throws
+`GaebWriteException` instead of silently producing a bad file.
+
+`GaebDocument::validate(?string $xsdDir = null): array` schema-checks the
+document against the XSDs bundled in the package
+(`docs/gaeb/3.3/2021-05_Leistungsverzeichnis/`, resolved by the document's
+phase); pass `$xsdDir` to validate against a different XSD set instead. An
+empty array means valid; otherwise it's the flattened list of libxml error
+strings.
+
 ## Custom drivers / instance API
 
 `GaebParser::fromFile()`/`::fromString()` are shortcuts for `new GaebParser`.
@@ -83,10 +143,12 @@ to add support for another format without touching this library.
 
 ## Out of scope
 
-- Writing/generating GAEB files
-- XSD validation
+- Writing formats other than the X84 bid transform above: from-scratch
+  X81/X83 authoring, X86/X89 award/rejection writing
+- `NotOffered` marking, per-item `VAT`, `UPComp1–6` price components,
+  sub-description prices, `TimeQu`, `Product` when writing bids
 - Legacy formats (GAEB 90, GAEB 2000)
-- Markup/surcharge items (`MarkupItem`) — skipped silently
+- Markup/surcharge items (`MarkupItem`) — skipped silently on read
 
 These may be added later without breaking the public API.
 

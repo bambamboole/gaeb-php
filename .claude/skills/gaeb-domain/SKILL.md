@@ -1,6 +1,6 @@
 ---
 name: gaeb-domain
-description: GAEB format reference for this package. Use when changing parsing logic, authoring or editing test fixtures, adding a format driver, debugging why a GAEB file parses unexpectedly, or answering questions about GAEB structure, phases, or element names.
+description: GAEB format reference for this package. Use when changing parsing logic, writing X84 bids, authoring or editing test fixtures, adding a format driver, debugging why a GAEB file parses unexpectedly, or answering questions about GAEB structure, phases, or element names.
 ---
 
 # GAEB Domain Knowledge
@@ -179,6 +179,61 @@ preserved in `Item->descriptionXml` for consumers needing formatting.
 - Use realistic element names, including the wild variants above.
 - Set the namespace to match the phase, e.g.
   `http://www.gaeb.de/GAEB_DA_XML/DA84/3.3` with `<DP>84</DP>`.
+
+## Writing X84 bids
+
+`GaebDocument::createBid(Bid $bid)` builds a **new** X84 DOM by walking the
+source X81/X83 DOM (`src/Write/BidWriter.php`, `@internal`) — derived from
+source, never mutating it: `ID` and `RNoPart` are copied verbatim from the
+source; `Qty` is re-emitted, normalized to 3 decimals
+(`number_format($qty, 3, '.', '')`), not copied verbatim. The `Bid` only
+supplies what changed: `UP`, filled `TextComplement`s, `BidComm`.
+
+Schema findings from the X84 + Lib XSDs (verified with xmllint, re-confirmed
+against `priced.x84`/`realistic.x84` while implementing the writer):
+
+- **`GAEBInfo/Date` is required**, in required order `Version, VersDate,
+  Date` — X84 does not restrict `tgGAEBInfo`, so the Lib type's requirement
+  applies unchanged (an earlier assumption that `Date` could be omitted for
+  determinism was wrong). `BidWriter` emits `$bid->date ?? date('Y-m-d')` —
+  pass `Bid`'s third constructor param for byte-deterministic output.
+- **`BoQCtgy/Totals` is required, not optional**, on every category
+  including nested ones — each is a recursive rollup of that category's own
+  subtree, computed under the same inclusion rules as the document total.
+- **`TextComplement` nests directly under `DetailTxt`** — `tgBoQText`
+  allows a repeated choice of `Text`/`TextComplement` as direct children, so
+  gap fills need no `<Text><p>` wrapper: `BidWriter::buildDescription()`
+  emits `DetailTxt > TextComplement(MarkLbl, Kind=Bidder) > ComplBody > p >
+  span` straight away.
+- **`BoQInfo/BoQBkdn` is required** (`minOccurs` defaults to 1,
+  `maxOccurs="7"`) — copied verbatim from the source and re-namespaced into
+  DA84 via `BidWriter::reNamespace()` (a generic deep-clone-into-new-
+  namespace helper; a plain `importNode` would keep the source's DA83
+  namespace and fail validation).
+
+`CTR/Address` (`tgAddress`, unrestricted by X84): required `Name1`,
+`Street`, `PCode`, `City`, in that order, then optional fields including
+`Phone` before `Email`. `Dto\Contractor` mirrors this — its six properties
+are all nullable, but `BidWriter::buildCTR()` throws `GaebWriteException`
+naming the missing field(s) if `name`/`street`/`zip`/`city` isn't fully set.
+
+Emission gotchas:
+
+- Priceable = every item except `notApplicable` ones; those are omitted
+  from the output entirely and need no price. A missing price on any other
+  item throws `GaebWriteException` listing every offending `rNo` — writing
+  never emits a silent `UP 0.000`.
+- An empty `BoQCtgy` (every item under it `notApplicable`) is dropped
+  entirely rather than emitted with a hollow `Totals/Total 0.00`; if the
+  whole bid ends up empty this way, `createBid` throws
+  `GaebWriteException('Bid contains no items')` — `tgBoQ` requires
+  `BoQBody`.
+- `IT` = `round(qty × UP, 2)`, or `round(UP, 2)` for qty-less (lump-sum)
+  items; `UP` is formatted `number_format($v, 3, '.', '')` (`tgDecimal_13_3`).
+- Totals inclusion mirrors the read-side classification: excludes
+  `Provisional::WithoutTotal` items and non-base alternatives
+  (`alternativeGroupNo` set with `alternativeSerialNo !== 1`); includes
+  `hourlyWork` items.
 
 ## Official XSDs
 
