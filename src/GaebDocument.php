@@ -6,6 +6,8 @@ use Bambamboole\GaebParser\Driver\GaebXmlDriver;
 use Bambamboole\GaebParser\Dto\GaebFile;
 use Bambamboole\GaebParser\Write\Bid;
 use Bambamboole\GaebParser\Write\BidWriter;
+use Bambamboole\GaebParser\Write\Invoice;
+use Bambamboole\GaebParser\Write\InvoiceWriter;
 use Bambamboole\GaebParser\Xml\Dom;
 use Dom\XMLDocument;
 
@@ -119,5 +121,17 @@ final class GaebDocument implements \JsonSerializable, \Stringable
         }
 
         return self::fromDom((new BidWriter)->write($this->dom, $this->file(), $bid));
+    }
+
+    /** Transforms this X86 contract into a new X89 invoice document. */
+    public function createInvoice(Invoice $invoice): self
+    {
+        $phase = $this->phase();
+        if ($phase !== 86) {
+            $got = $phase === null ? 'none' : "X{$phase}";
+            throw new GaebWriteException("createInvoice requires an X86 source, got {$got}");
+        }
+
+        return self::fromDom((new InvoiceWriter)->write($this->dom, $this->file(), $invoice));
     }
 }
