@@ -33,6 +33,7 @@ All can be added later without breaking the public API.
 
 ```php
 $gaeb = GaebParser::fromFile('tender.x83');   // or ::fromString($xml)
+// both static methods return a GaebFile
 
 $gaeb->info;      // GaebInfo
 $gaeb->project;   // ProjectInfo
