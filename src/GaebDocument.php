@@ -65,11 +65,12 @@ final class GaebDocument implements \JsonSerializable, \Stringable
     /** @return list<string> schema errors, [] = valid */
     public function validate(?string $xsdDir = null): array
     {
-        $xsdDir ??= dirname(__DIR__).'/docs/gaeb/3.3/2021-05_Leistungsverzeichnis';
         $phase = $this->phase();
-        if ($phase === null || $phase < 80 || $phase > 87) {
+        if ($phase === null || $phase < 80 || $phase === 88 || $phase > 89) {
             return ['Cannot resolve schema for phase: '.var_export($phase, true)];
         }
+        $family = $phase === 89 ? '2021-05_Rechnung' : '2021-05_Leistungsverzeichnis';
+        $xsdDir ??= dirname(__DIR__).'/docs/gaeb/3.3/'.$family;
         $xsd = "{$xsdDir}/GAEB_DA_XML_{$phase}_3.3_2021-05.xsd";
         if (! is_file($xsd)) {
             return ["Schema file not found: {$xsd}"];

@@ -112,3 +112,24 @@ it('keeps invoice null for award documents', function () {
     expect($gaeb->invoice)->toBeNull()
         ->and($gaeb->boq->items ?? null)->not->toBeNull();
 });
+
+it('parses the invoice.x89 fixture end to end', function () {
+    $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/invoice.x89');
+
+    expect($gaeb->info->phase)->toBe(89)
+        ->and($gaeb->invoice->invoiceNo)->toBe('RE-2026-007')
+        ->and($gaeb->invoice->type)->toBe(InvoiceType::Deduction)
+        ->and($gaeb->invoice->settlementType)->toBe(SettlementType::Accumulated)
+        ->and($gaeb->invoice->creator->taxNo)->toBe('DE123456789')
+        ->and($gaeb->invoice->payments)->toHaveCount(1)
+        ->and($gaeb->invoice->totalGross)->toBe(3052.35)
+        ->and($gaeb->boq->total)->toBe(2565.00)
+        ->and($gaeb->boq->totals->totalGross)->toBe(3052.35);
+
+    $items = iterator_to_array($gaeb->boq->allItems(), false);
+    expect($items)->toHaveCount(2)
+        ->and($items[0]->rNo)->toBe('01.0010')
+        ->and($items[0]->billedQty)->toBe(30.0)
+        ->and($items[0]->totalPrice)->toBe(1365.00)
+        ->and($items[1]->billedQty)->toBe(1.0);
+});
