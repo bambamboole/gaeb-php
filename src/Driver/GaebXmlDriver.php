@@ -76,7 +76,7 @@ final class GaebXmlDriver implements Driver
         $awardInfo = $award !== null ? self::child($award, 'AwardInfo') : null;
 
         return new ProjectInfo(
-            name: $prj !== null ? (self::text($prj, 'Name') ?? self::text($prj, 'NamePrj')) : null,
+            name: $prj !== null ? (self::text($prj, 'NamePrj') ?? self::text($prj, 'Name')) : null,
             label: $prj !== null ? self::text($prj, 'LblPrj') : null,
             currency: ($prj !== null ? self::text($prj, 'Cur') : null)
                 ?? ($awardInfo !== null ? self::text($awardInfo, 'Cur') : null),
@@ -96,21 +96,23 @@ final class GaebXmlDriver implements Driver
         $body = self::child($boq, 'BoQBody');
         [$categories, $items] = $body !== null ? self::parseBody($body, []) : [[], []];
 
+        $totalsDto = $totals !== null ? new Totals(
+            total: self::floatVal($totals, 'Total'),
+            discountPercent: self::floatVal($totals, 'DiscountPcnt'),
+            discountAmount: self::floatVal($totals, 'DiscountAmt'),
+            totalAfterDiscount: self::floatVal($totals, 'TotAfterDisc'),
+            vat: self::floatVal($totals, 'VAT'),
+            vatAmount: self::floatVal($totals, 'VATAmount'),
+            totalNet: self::floatVal($totals, 'TotalNet'),
+            totalGross: self::floatVal($totals, 'TotalGross'),
+        ) : null;
+
         return new BoQ(
             label: $info !== null ? (self::text($info, 'LblBoQ') ?? self::text($info, 'Name')) : null,
             currency: ($info !== null ? self::text($info, 'Cur') : null)
                 ?? ($awardInfo !== null ? self::text($awardInfo, 'Cur') : null),
-            total: $totals !== null ? self::floatVal($totals, 'Total') : null,
-            totals: $totals !== null ? new Totals(
-                total: self::floatVal($totals, 'Total'),
-                discountPercent: self::floatVal($totals, 'DiscountPcnt'),
-                discountAmount: self::floatVal($totals, 'DiscountAmt'),
-                totalAfterDiscount: self::floatVal($totals, 'TotAfterDisc'),
-                vat: self::floatVal($totals, 'VAT'),
-                vatAmount: self::floatVal($totals, 'VATAmount'),
-                totalNet: self::floatVal($totals, 'TotalNet'),
-                totalGross: self::floatVal($totals, 'TotalGross'),
-            ) : null,
+            total: $totalsDto?->total,
+            totals: $totalsDto,
             categories: $categories,
             items: $items,
         );
