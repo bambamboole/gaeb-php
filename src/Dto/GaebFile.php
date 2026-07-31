@@ -11,5 +11,6 @@ final readonly class GaebFile
         public ?Party $owner,
         public ?Party $contractor,
         public ?AwardData $award,
+        public ?InvoiceData $invoice,
     ) {}
 }

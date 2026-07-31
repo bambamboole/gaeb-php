@@ -11,5 +11,6 @@ final readonly class Party
         public ?string $city,
         public ?string $phone,
         public ?string $email,
+        public ?string $taxNo,
     ) {}
 }

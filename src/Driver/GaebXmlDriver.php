@@ -7,10 +7,14 @@ use Bambamboole\GaebParser\Dto\BoQ;
 use Bambamboole\GaebParser\Dto\BoQCategory;
 use Bambamboole\GaebParser\Dto\GaebFile;
 use Bambamboole\GaebParser\Dto\GaebInfo;
+use Bambamboole\GaebParser\Dto\InvoiceData;
+use Bambamboole\GaebParser\Dto\InvoiceType;
 use Bambamboole\GaebParser\Dto\Item;
 use Bambamboole\GaebParser\Dto\Party;
+use Bambamboole\GaebParser\Dto\Payment;
 use Bambamboole\GaebParser\Dto\ProjectInfo;
 use Bambamboole\GaebParser\Dto\Provisional;
+use Bambamboole\GaebParser\Dto\SettlementType;
 use Bambamboole\GaebParser\Dto\SubDescription;
 use Bambamboole\GaebParser\Dto\TextComplement;
 use Bambamboole\GaebParser\Dto\TextComplementKind;
@@ -46,24 +50,26 @@ final class GaebXmlDriver implements Driver
         }
 
         $award = Dom::child($root, 'Award');
+        $container = $award ?? Dom::child($root, 'Invoice');
 
         return new GaebFile(
             info: self::parseInfo($root),
-            project: self::parseProject($root, $award),
-            boq: $award !== null ? self::parseBoQ($award) : null,
-            owner: $award !== null ? self::parseParty(Dom::child($award, 'OWN')) : null,
-            contractor: $award !== null ? self::parseParty(Dom::child($award, 'CTR')) : null,
-            award: $award !== null ? self::parseAwardData(Dom::child($award, 'AwardInfo')) : null,
+            project: self::parseProject($root, $container),
+            boq: $container !== null ? self::parseBoQ($container) : null,
+            owner: $container !== null ? self::parseParty(Dom::child($container, 'OWN')) : null,
+            contractor: $container !== null ? self::parseParty(Dom::child($container, 'CTR')) : null,
+            award: $container !== null ? self::parseAwardData(Dom::child($container, 'AwardInfo')) : null,
+            invoice: $container !== null ? self::parseInvoiceData($container) : null,
         );
     }
 
     private static function parseInfo(Element $root): GaebInfo
     {
         $info = Dom::child($root, 'GAEBInfo');
-        $award = Dom::child($root, 'Award');
+        $container = Dom::child($root, 'Award') ?? Dom::child($root, 'Invoice');
 
         $phase = null;
-        $dp = $award !== null ? Dom::text($award, 'DP') : null;
+        $dp = $container !== null ? Dom::text($container, 'DP') : null;
         if ($dp !== null && ctype_digit($dp)) {
             $phase = (int) $dp;
         } elseif (preg_match('~/DA(8\d)/~', (string) $root->namespaceURI, $m) === 1) {
@@ -78,10 +84,10 @@ final class GaebXmlDriver implements Driver
         );
     }
 
-    private static function parseProject(Element $root, ?Element $award): ProjectInfo
+    private static function parseProject(Element $root, ?Element $container): ProjectInfo
     {
         $prj = Dom::child($root, 'PrjInfo');
-        $awardInfo = $award !== null ? Dom::child($award, 'AwardInfo') : null;
+        $awardInfo = $container !== null ? Dom::child($container, 'AwardInfo') : null;
 
         return new ProjectInfo(
             name: $prj !== null ? (Dom::text($prj, 'NamePrj') ?? Dom::text($prj, 'Name')) : null,
@@ -91,15 +97,15 @@ final class GaebXmlDriver implements Driver
         );
     }
 
-    private static function parseBoQ(Element $award): ?BoQ
+    private static function parseBoQ(Element $container): ?BoQ
     {
-        $boq = Dom::child($award, 'BoQ');
+        $boq = Dom::child($container, 'BoQ');
         if ($boq === null) {
             return null;
         }
 
         $info = Dom::child($boq, 'BoQInfo');
-        $awardInfo = Dom::child($award, 'AwardInfo');
+        $awardInfo = Dom::child($container, 'AwardInfo');
         $totals = $info !== null ? Dom::child($info, 'Totals') : null;
         $body = Dom::child($boq, 'BoQBody');
         [$categories, $items] = $body !== null ? self::parseBody($body, []) : [[], []];
@@ -194,6 +200,7 @@ final class GaebXmlDriver implements Driver
             textComplements: self::parseTextComplements($description),
             bidderComment: self::parseBidderComment($item),
             subDescriptions: self::parseSubDescriptions($item),
+            billedQty: Dom::floatVal($item, 'BillQty'),
         );
     }
 
@@ -291,6 +298,7 @@ final class GaebXmlDriver implements Driver
             city: $address !== null ? Dom::text($address, 'City') : null,
             phone: $address !== null ? Dom::text($address, 'Phone') : null,
             email: $address !== null ? Dom::text($address, 'Email') : null,
+            taxNo: Dom::text($party, 'TaxNo'),
         );
     }
 
@@ -309,6 +317,42 @@ final class GaebXmlDriver implements Driver
             warrantyDuration: Dom::intVal($awardInfo, 'WarrDur'),
             warrantyUnit: WarrantyUnit::tryFrom((string) Dom::text($awardInfo, 'WarrUnit')),
             warrantyEnd: Dom::text($awardInfo, 'WarrEnd'),
+        );
+    }
+
+    private static function parseInvoiceData(Element $container): ?InvoiceData
+    {
+        $header = Dom::child($container, 'InvoiceHeader');
+        if ($header === null) {
+            return null;
+        }
+
+        $payments = [];
+        foreach (Dom::children($container, 'PaymentMade') as $payment) {
+            $payments[] = new Payment(
+                total: Dom::text($payment, 'Total'),
+                totalVat: Dom::text($payment, 'TotalVAT'),
+                discountAmount: Dom::text($payment, 'DiscountAmt'),
+                paymentDate: Dom::text($payment, 'PaymentDate'),
+                invoiceNo: Dom::text($payment, 'InvoiceNo'),
+                paymentNo: Dom::text($payment, 'PaymentNo'),
+                paymentNote: Dom::text($payment, 'PaymentNote'),
+            );
+        }
+
+        return new InvoiceData(
+            invoiceNo: Dom::text($header, 'InvoiceNo'),
+            invoiceDate: Dom::text($header, 'InvoiceDate'),
+            type: InvoiceType::tryFrom((string) Dom::text($header, 'InvoiceType')),
+            creditNote: Dom::text($header, 'CreditNote') === 'Yes',
+            settlementType: SettlementType::tryFrom((string) Dom::text($header, 'SettlementType')),
+            sequentialNo: Dom::intVal($header, 'SequentialNo'),
+            servicePeriodStart: Dom::text($header, 'ServiceProvisionStartDate'),
+            servicePeriodEnd: Dom::text($header, 'ServiceProvisionEndDate'),
+            creator: self::parseParty(Dom::child($container, 'InvoiceCreator')),
+            recipient: self::parseParty(Dom::child($container, 'InvoiceRecipient')),
+            payments: $payments,
+            totalGross: Dom::floatVal($container, 'TotalGross'),
         );
     }
 }
