@@ -416,10 +416,7 @@ final class InvoiceWriter
             }
             $itemEl->appendChild($this->elem($out, 'BillQty', (string) $billQty));
 
-            // A lump-sum position has no natural unit; "psch" (pauschal)
-            // is the standard GAEB convention and what a lump-sum item
-            // without a source QU is expected to carry.
-            $qu = Dom::text($srcItem, 'QU') ?? ($lumpSum ? 'psch' : null);
+            $qu = Dom::text($srcItem, 'QU');
             if ($qu === null) {
                 throw new GaebWriteException("Item {$rNo} has no unit (QU) in the contract");
             }

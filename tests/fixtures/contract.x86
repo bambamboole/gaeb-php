@@ -80,6 +80,7 @@
               </Item>
               <Item ID="I0020" RNoPart="0020">
                 <LumpSumItem>Yes</LumpSumItem>
+                <QU>psch</QU>
                 <UP>1200.00</UP>
                 <IT>1200.00</IT>
                 <Description>
