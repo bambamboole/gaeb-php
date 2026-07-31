@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-use Bambamboole\GaebParser\GaebParser;
+use Bambamboole\Gaeb\GaebParser;
 
 it('parses prices and totals from an x84 file', function () {
     $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/priced.x84');

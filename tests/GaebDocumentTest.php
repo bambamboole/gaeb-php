@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
-use Bambamboole\GaebParser\GaebDocument;
-use Bambamboole\GaebParser\GaebParseException;
+use Bambamboole\Gaeb\GaebDocument;
+use Bambamboole\Gaeb\GaebParseException;
 
 it('opens a file and exposes the parsed model lazily', function () {
     $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');

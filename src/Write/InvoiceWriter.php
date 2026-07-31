@@ -1,14 +1,14 @@
 <?php declare(strict_types=1);
 
-namespace Bambamboole\GaebParser\Write;
+namespace Bambamboole\Gaeb\Write;
 
-use Bambamboole\GaebParser\Dto\GaebFile;
-use Bambamboole\GaebParser\Dto\Item;
-use Bambamboole\GaebParser\Dto\Party;
-use Bambamboole\GaebParser\Dto\Payment;
-use Bambamboole\GaebParser\Dto\SettlementType;
-use Bambamboole\GaebParser\GaebWriteException;
-use Bambamboole\GaebParser\Xml\Dom;
+use Bambamboole\Gaeb\Dto\GaebFile;
+use Bambamboole\Gaeb\Dto\Item;
+use Bambamboole\Gaeb\Dto\Party;
+use Bambamboole\Gaeb\Dto\Payment;
+use Bambamboole\Gaeb\Dto\SettlementType;
+use Bambamboole\Gaeb\GaebWriteException;
+use Bambamboole\Gaeb\Xml\Dom;
 use Brick\Math\BigDecimal;
 use Brick\Math\Exception\MathException;
 use Brick\Math\RoundingMode;
@@ -89,7 +89,7 @@ final class InvoiceWriter
         $info->appendChild($this->elem($out, 'Version', '3.3'));
         $info->appendChild($this->elem($out, 'VersDate', '2021-05'));
         $info->appendChild($this->elem($out, 'Date', $invoice->date ?? date('Y-m-d')));
-        $info->appendChild($this->elem($out, 'ProgSystem', 'bambamboole/gaeb-parser'));
+        $info->appendChild($this->elem($out, 'ProgSystem', $invoice->progSystem));
 
         return $info;
     }

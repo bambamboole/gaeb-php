@@ -1,7 +1,7 @@
 {
-    "name": "bambamboole/gaeb-parser",
-    "description": "A small PHP library to parse GAEB DA XML 3.3 files into typed PHP objects.",
-    "keywords": ["bambamboole", "gaeb", "xml", "parser", "ava", "boq"],
+    "name": "bambamboole/gaeb-php",
+    "description": "A small PHP library to parse, write and validate GAEB DA XML 3.3 files.",
+    "keywords": ["bambamboole", "gaeb", "xml", "parser", "writer", "ava", "boq"],
     "license": "MIT",
     "type": "library",
     "authors": [
@@ -22,7 +22,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Bambamboole\\GaebParser\\": "src/"
+            "Bambamboole\\Gaeb\\": "src/"
         }
     },
     "autoload-dev": {

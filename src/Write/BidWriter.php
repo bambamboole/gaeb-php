@@ -1,14 +1,14 @@
 <?php declare(strict_types=1);
 
-namespace Bambamboole\GaebParser\Write;
+namespace Bambamboole\Gaeb\Write;
 
-use Bambamboole\GaebParser\Dto\Contractor;
-use Bambamboole\GaebParser\Dto\GaebFile;
-use Bambamboole\GaebParser\Dto\Item;
-use Bambamboole\GaebParser\Dto\Provisional;
-use Bambamboole\GaebParser\Dto\TextComplementKind;
-use Bambamboole\GaebParser\GaebWriteException;
-use Bambamboole\GaebParser\Xml\Dom;
+use Bambamboole\Gaeb\Dto\Contractor;
+use Bambamboole\Gaeb\Dto\GaebFile;
+use Bambamboole\Gaeb\Dto\Item;
+use Bambamboole\Gaeb\Dto\Provisional;
+use Bambamboole\Gaeb\Dto\TextComplementKind;
+use Bambamboole\Gaeb\GaebWriteException;
+use Bambamboole\Gaeb\Xml\Dom;
 use Brick\Math\BigDecimal;
 use Brick\Math\Exception\MathException;
 use Brick\Math\RoundingMode;
@@ -131,7 +131,7 @@ final class BidWriter
         $info->appendChild($this->elem($out, 'Version', '3.3'));
         $info->appendChild($this->elem($out, 'VersDate', '2021-05'));
         $info->appendChild($this->elem($out, 'Date', $bid->date ?? date('Y-m-d')));
-        $info->appendChild($this->elem($out, 'ProgSystem', 'bambamboole/gaeb-parser'));
+        $info->appendChild($this->elem($out, 'ProgSystem', $bid->progSystem));
 
         return $info;
     }

@@ -1,11 +1,11 @@
 <?php declare(strict_types=1);
 
-use Bambamboole\GaebParser\Driver\Driver;
-use Bambamboole\GaebParser\Dto\GaebFile;
-use Bambamboole\GaebParser\Dto\GaebInfo;
-use Bambamboole\GaebParser\Dto\ProjectInfo;
-use Bambamboole\GaebParser\GaebParseException;
-use Bambamboole\GaebParser\GaebParser;
+use Bambamboole\Gaeb\Driver\Driver;
+use Bambamboole\Gaeb\Dto\GaebFile;
+use Bambamboole\Gaeb\Dto\GaebInfo;
+use Bambamboole\Gaeb\Dto\ProjectInfo;
+use Bambamboole\Gaeb\GaebParseException;
+use Bambamboole\Gaeb\GaebParser;
 
 it('parses via the instance api', function () {
     $content = file_get_contents(__DIR__.'/fixtures/boq.x83');
