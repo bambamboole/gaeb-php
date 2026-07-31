@@ -7,8 +7,7 @@ it('parses prices and totals from an x84 file', function () {
 
     expect($gaeb->info->phase)->toBe(84)
         ->and($gaeb->boq->total)->toBe(1450.00)
-        ->and($gaeb->boq->items)->toHaveCount(1)
-        ->and($gaeb->boq->items[0]->rNo)->toBe('90');
+        ->and($gaeb->boq->categories)->toHaveCount(2);
 
     $item = $gaeb->boq->categories[0]->items[0];
     expect($item->unitPrice)->toBe(12.50)
@@ -22,5 +21,5 @@ it('iterates all items flattened with resolved position numbers', function () {
     );
 
     expect($items)->toHaveCount(2)
-        ->and(array_map(fn ($i) => $i->rNo, $items))->toBe(['90', '01.0010']);
+        ->and(array_map(fn ($i) => $i->rNo, $items))->toBe(['01.0010', '90.0010']);
 });

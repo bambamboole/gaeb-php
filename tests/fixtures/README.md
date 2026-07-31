@@ -9,3 +9,26 @@ real-world GAEB DA XML 3.3 "Bauausfuehrung" (X84) file — including
 `NamePrj`, `Award/AwardInfo/Cur`, `BoQInfo/Name`, `GAEBInfo/ProgName`,
 `RNoIndex` item variants, and an item with no `Description` element — but
 all project names, texts, and numbers are invented for this test suite.
+
+## Schema validity
+
+`minimal.x83`, `boq.x83`, `priced.x84`, and `realistic.x84` are valid
+against the official GAEB 3.3 XSDs (`GAEB_DA_XML_83_3.3_2021-05.xsd` /
+`GAEB_DA_XML_84_3.3_2021-05.xsd`). `tests/fixtures/nonconforming.x83` is
+**intentionally invalid** — it drops required elements/attributes (no
+`VersDate`, `PrjInfo/Name` instead of `NamePrj`, `BoQInfo/LblBoQ` without
+`Name`, no `ID` attributes, an item without `Description`) to exercise the
+parser's leniency fallbacks in `tests/LenientParsingTest.php`. Never make
+it schema-valid.
+
+To validate locally: place the official GAEB 3.3 "Leistungsverzeichnis"
+XSD set (not redistributable, so it isn't in this repo) under
+`docs/gaeb/2021-05_Leistungsverzeichnis/`, or point `GAEB_XSD_DIR` at
+wherever you keep them, then run:
+
+```
+vendor/bin/pest tests/SchemaValidationTest.php
+```
+
+The test skips entirely when no XSD directory is found, so CI (which has
+no local copy) stays green without it.

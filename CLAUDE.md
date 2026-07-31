@@ -51,9 +51,18 @@ exists so they can be added later.
   commit a third-party GAEB file unless the redistribution license chain
   terminates at the copyright holder — an MIT-licensed repo containing
   someone else's file grants nothing.
+- The four standard fixtures (`minimal.x83`, `boq.x83`, `priced.x84`,
+  `realistic.x84`) must validate against the official GAEB 3.3 XSDs when
+  they're available locally: `tests/SchemaValidationTest.php` runs
+  `DOMDocument::schemaValidate()` against `docs/gaeb/` (or `GAEB_XSD_DIR`)
+  and skips cleanly when the XSDs aren't present (e.g. CI).
+  `tests/fixtures/nonconforming.x83` is deliberately schema-invalid and
+  covers the parser's leniency fallbacks instead.
 - Real-world element variants matter more than naive spec reading: keep
-  coverage for `NamePrj`, `Award/AwardInfo/Cur`, `BoQInfo/Name`,
-  `ProgName`, and `RNoIndex` (see the gaeb-domain skill).
+  coverage for `NamePrj` (the schema-primary project name element —
+  `PrjInfo/Name` has no schema basis and is a leniency fallback only),
+  `Award/AwardInfo/Cur`, `BoQInfo/Name`, `ProgName`, and `RNoIndex` (see
+  the gaeb-domain skill).
 
 ## Comments
 
