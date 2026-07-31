@@ -194,6 +194,38 @@ until clean)
   quantities and any prior payments (`Invoice`/`Payment` in
   `src/Write/`).
 
+## Nachträge (change orders)
+
+Verified against the 3.3 XSDs while implementing the Nachtrag read +
+billing guard (`nachtrag.x86` iterated until schema-clean):
+
+- `AwardInfo/COInfo*` (`tgCOInfo`): `CONo` (required), `COPhase?`
+  (`CallChangOrder|SupplBid|SupplAgree`), `COStatus?`, `COInit?`
+  (`Owner|Contractor`), `COReas?` (`tgFText` — p/div/span runs, flatten),
+  `RefBoQCOInfo?`, `CODate?`. Parsed into `AwardData->changeOrders`
+  (`ChangeOrder` DTO).
+- `CONo` is `tgNonNegativeInteger ≤ 999`; **0 means Hauptauftrag** (main
+  contract), 999 the complete contract inventory — only `CONo ≥ 1` is an
+  actual Nachtrag.
+- `BoQInfo`, `BoQCtgy` and `Item` each carry an optional inner sequence
+  `CONo + COStatus` — the pair is all-or-nothing; a lone `CONo` is
+  schema-invalid. Placement: Item — after the flag block
+  (`LumpSumItem`/`HourIt`/`KeyIt`/`UPBkdn`/`MarkupIt`), before
+  `RefDescr`/`Qty`; BoQCtgy — after `CPVCode`, before the `ALNB` block;
+  BoQInfo — after `CPVCode`, before `Date`/`OutlCompl`. Parsed as
+  `changeOrderNo`/`changeOrderStatus` on `BoQ`/`BoQCategory`/`Item`.
+- `tgCOStatus` enum:
+  `Recog|Filed|Offered|Withdrawn|Rejected|ObjToRecj|FormAckn|Approved`
+  (`Dto\ChangeOrderStatus`; unknown values → `null`, lenient).
+- Fachdokumentation 8.1.3.8: a Nachtrag position may only be **billed**
+  when `COStatus="Approved"` — `InvoiceWriter` throws `GaebWriteException`
+  for billed items with `changeOrderNo ≥ 1` and any other status, and
+  copies the `CONo`/`COStatus` pair into the X89 item (X89 keeps the pair,
+  emitted between `LumpSumItem` and `BillQty`).
+- Appendix 11.2.3 Item rule 8: "Bei Nachtragspositionen muss das Element
+  CONo existieren" — Nachtrag items always carry their own `CONo`, so no
+  ancestor-category inheritance is needed when checking items.
+
 ## Position numbers (rNo)
 
 `rNo` = the `RNoPart` of every ancestor `BoQCtgy` plus the item's own
@@ -288,9 +320,9 @@ The official GAEB 3.3 XSD set is committed UNMODIFIED under
 copyright attribution live in `docs/gaeb/README.md` — the schemas are
 GAEB/DIN works redistributed byte-identically; NEVER modify them, and
 never commit the Fachdokumentation PDF (© DIN, git-ignored).
-`tests/SchemaValidationTest.php` validates the six standard fixtures
+`tests/SchemaValidationTest.php` validates the seven standard fixtures
 (`minimal.x83`, `boq.x83`, `priced.x84`, `realistic.x84`, `contract.x86`,
-`invoice.x89`) against `docs/gaeb/3.3/` with `Dom\XMLDocument::schemaValidate()`;
+`nachtrag.x86`, `invoice.x89`) against `docs/gaeb/3.3/` with `Dom\XMLDocument::schemaValidate()`;
 they span two XSD family dirs — `2021-05_Leistungsverzeichnis/` for
 X81–X86, `2021-05_Rechnung/` for X89 — and tests skip when the directory is
 absent. `GAEB_XSD_DIR` now points at the `3.3` root (not a family

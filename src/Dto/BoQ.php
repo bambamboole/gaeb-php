@@ -15,6 +15,8 @@ final readonly class BoQ
         public ?Totals $totals,
         public array $categories,
         public array $items,
+        public ?int $changeOrderNo = null,
+        public ?ChangeOrderStatus $changeOrderStatus = null,
     ) {}
 
     /**

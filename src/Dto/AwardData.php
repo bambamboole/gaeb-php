@@ -13,5 +13,7 @@ final readonly class AwardData
         public ?int $warrantyDuration,
         public ?WarrantyUnit $warrantyUnit,
         public ?string $warrantyEnd,
+        /** @var list<ChangeOrder> */
+        public array $changeOrders = [],
     ) {}
 }

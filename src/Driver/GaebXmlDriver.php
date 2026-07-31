@@ -5,6 +5,8 @@ namespace Bambamboole\Gaeb\Driver;
 use Bambamboole\Gaeb\Dto\AwardData;
 use Bambamboole\Gaeb\Dto\BoQ;
 use Bambamboole\Gaeb\Dto\BoQCategory;
+use Bambamboole\Gaeb\Dto\ChangeOrder;
+use Bambamboole\Gaeb\Dto\ChangeOrderStatus;
 use Bambamboole\Gaeb\Dto\GaebFile;
 use Bambamboole\Gaeb\Dto\GaebInfo;
 use Bambamboole\Gaeb\Dto\InvoiceData;
@@ -129,6 +131,8 @@ final class GaebXmlDriver implements Driver
             totals: $totalsDto,
             categories: $categories,
             items: $items,
+            changeOrderNo: $info !== null ? Dom::intVal($info, 'CONo') : null,
+            changeOrderStatus: $info !== null ? self::parseChangeOrderStatus($info) : null,
         );
     }
 
@@ -169,6 +173,8 @@ final class GaebXmlDriver implements Driver
             label: Dom::flatten(Dom::child($ctgy, 'LblTx')),
             categories: $categories,
             items: $items,
+            changeOrderNo: Dom::intVal($ctgy, 'CONo'),
+            changeOrderStatus: self::parseChangeOrderStatus($ctgy),
         );
     }
 
@@ -201,7 +207,14 @@ final class GaebXmlDriver implements Driver
             bidderComment: self::parseBidderComment($item),
             subDescriptions: self::parseSubDescriptions($item),
             billedQty: Dom::floatVal($item, 'BillQty'),
+            changeOrderNo: Dom::intVal($item, 'CONo'),
+            changeOrderStatus: self::parseChangeOrderStatus($item),
         );
+    }
+
+    private static function parseChangeOrderStatus(Element $parent): ?ChangeOrderStatus
+    {
+        return ChangeOrderStatus::tryFrom((string) Dom::text($parent, 'COStatus'));
     }
 
     /** @return array{?string, ?string, ?string} shortText, longText, descriptionXml */
@@ -308,6 +321,19 @@ final class GaebXmlDriver implements Driver
             return null;
         }
 
+        $changeOrders = [];
+        foreach (Dom::children($awardInfo, 'COInfo') as $info) {
+            $changeOrders[] = new ChangeOrder(
+                no: Dom::intVal($info, 'CONo'),
+                phase: Dom::text($info, 'COPhase'),
+                status: self::parseChangeOrderStatus($info),
+                initiator: Dom::text($info, 'COInit'),
+                reason: Dom::flatten(Dom::child($info, 'COReas')),
+                reference: Dom::text($info, 'RefBoQCOInfo'),
+                date: Dom::text($info, 'CODate'),
+            );
+        }
+
         return new AwardData(
             contractNo: Dom::text($awardInfo, 'ContrNo'),
             contractDate: Dom::text($awardInfo, 'ContrDate'),
@@ -317,6 +343,7 @@ final class GaebXmlDriver implements Driver
             warrantyDuration: Dom::intVal($awardInfo, 'WarrDur'),
             warrantyUnit: WarrantyUnit::tryFrom((string) Dom::text($awardInfo, 'WarrUnit')),
             warrantyEnd: Dom::text($awardInfo, 'WarrEnd'),
+            changeOrders: $changeOrders,
         );
     }
 

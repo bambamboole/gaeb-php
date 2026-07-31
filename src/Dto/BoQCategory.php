@@ -13,5 +13,7 @@ final readonly class BoQCategory
         public ?string $label,
         public array $categories,
         public array $items,
+        public ?int $changeOrderNo = null,
+        public ?ChangeOrderStatus $changeOrderStatus = null,
     ) {}
 }
