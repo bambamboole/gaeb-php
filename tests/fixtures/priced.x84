@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA84/3.3">
+  <GAEBInfo><Version>3.3</Version></GAEBInfo>
+  <PrjInfo><Name>PRJ-1</Name><Cur>EUR</Cur></PrjInfo>
+  <Award>
+    <DP>84</DP>
+    <BoQ>
+      <BoQInfo>
+        <LblBoQ>Angebot Testhalle</LblBoQ>
+        <Cur>EUR</Cur>
+        <Totals><Total>1450.00</Total></Totals>
+      </BoQInfo>
+      <BoQBody>
+        <BoQCtgy RNoPart="01">
+          <LblTx><p><span>Erdarbeiten</span></p></LblTx>
+          <BoQBody>
+            <Itemlist>
+              <Item RNoPart="0010">
+                <Qty>100.000</Qty>
+                <QU>m3</QU>
+                <Description>
+                  <CompleteText>
+                    <OutlineText>
+                      <OutlTxt><TextOutlTxt><p><span>Boden loesen</span></p></TextOutlTxt></OutlTxt>
+                    </OutlineText>
+                  </CompleteText>
+                </Description>
+                <UP>12.50</UP>
+                <IT>1250.00</IT>
+              </Item>
+            </Itemlist>
+          </BoQBody>
+        </BoQCtgy>
+        <Itemlist>
+          <Item RNoPart="90">
+            <QU>psch</QU>
+            <Description>
+              <CompleteText>
+                <OutlineText>
+                  <OutlTxt><TextOutlTxt><p><span>Stundenlohnarbeiten</span></p></TextOutlTxt></OutlTxt>
+                </OutlineText>
+              </CompleteText>
+            </Description>
+            <UP>200.00</UP>
+            <IT>200.00</IT>
+          </Item>
+        </Itemlist>
+      </BoQBody>
+    </BoQ>
+  </Award>
+</GAEB>
