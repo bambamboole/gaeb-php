@@ -136,7 +136,7 @@ it('parses the awarded BoQ of an X86 file through the existing BoQ model', funct
 
     expect($gaeb->boq->label)->toBe('Lagerhalle Nord - Auftrags-LV')
         ->and($gaeb->boq->currency)->toBe('EUR')
-        ->and($gaeb->boq->total)->toBe(3475.00)
+        ->and($gaeb->boq->totals->total)->toBe(3475.00)
         ->and($gaeb->boq->categories)->toHaveCount(1);
 
     [$first, $second] = $gaeb->boq->categories[0]->items;

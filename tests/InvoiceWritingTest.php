@@ -60,7 +60,7 @@ it('creates a schema-valid cumulative X89 invoice from the X86 contract', functi
         ->and($items[0]->unitPrice)->toBe(45.5)
         ->and($items[0]->totalPrice)->toBe(1365.00)
         ->and($items[1]->totalPrice)->toBe(1200.00)
-        ->and($gaeb->boq->total)->toBe(2565.00)
+        ->and($gaeb->boq->totals->total)->toBe(2565.00)
         ->and($gaeb->boq->totals->vatAmount)->toBe(487.35)
         ->and($gaeb->boq->totals->totalGross)->toBe(3052.35)
         ->and($gaeb->owner->name)->toBe('Stadtwerke Musterstadt')
@@ -78,7 +78,7 @@ it('bills a subset of items without touching the rest', function () {
         ->and($items[0]->rNo)->toBe('01.0010')
         ->and($items[0]->billedQty)->toBe(12.5)
         ->and($items[0]->totalPrice)->toBe(568.75)  // 12.5 x 45.500
-        ->and($gaeb->boq->total)->toBe(568.75);
+        ->and($gaeb->boq->totals->total)->toBe(568.75);
 });
 
 it('rejects unknown rNos', function () {

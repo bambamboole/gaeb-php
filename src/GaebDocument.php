@@ -22,15 +22,7 @@ final class GaebDocument implements \JsonSerializable, \Stringable
 
     public static function open(string $path): self
     {
-        if (! is_file($path) || ! is_readable($path)) {
-            throw new GaebParseException("Cannot read file: {$path}");
-        }
-        $content = file_get_contents($path);
-        if ($content === false) {
-            throw new GaebParseException("Cannot read file: {$path}");
-        }
-
-        return self::fromString($content);
+        return self::fromString(Io::read($path));
     }
 
     public static function fromString(string $content): self

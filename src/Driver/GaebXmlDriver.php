@@ -127,7 +127,6 @@ final class GaebXmlDriver implements Driver
             label: $info !== null ? (Dom::text($info, 'LblBoQ') ?? Dom::text($info, 'Name')) : null,
             currency: ($info !== null ? Dom::text($info, 'Cur') : null)
                 ?? ($awardInfo !== null ? Dom::text($awardInfo, 'Cur') : null),
-            total: $totalsDto?->total,
             totals: $totalsDto,
             categories: $categories,
             items: $items,

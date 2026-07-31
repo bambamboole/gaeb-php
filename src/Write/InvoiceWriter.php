@@ -14,20 +14,22 @@ use Brick\Math\BigDecimal;
 use Brick\Math\Exception\MathException;
 use Brick\Math\RoundingMode;
 use Dom\Element;
-use Dom\Text;
 use Dom\XMLDocument;
 
 /**
  * @internal builds the X89 invoice DOM from a source X86 contract DOM plus
- * its parsed read model and an Invoice collector. Mirrors BidWriter; see
- * docs/superpowers/specs/2026-07-31-x89-invoicing-design.md.
+ * its parsed read model and an Invoice collector. Mirrors BidWriter.
  */
-final class InvoiceWriter
+final class InvoiceWriter extends Writer
 {
-    private const NS = 'http://www.gaeb.de/GAEB_DA_XML/DA89/3.3';
+    protected const string NS = 'http://www.gaeb.de/GAEB_DA_XML/DA89/3.3';
+
+    private Invoice $invoice;
 
     public function write(XMLDocument $source, GaebFile $file, Invoice $invoice): XMLDocument
     {
+        $this->invoice = $invoice;
+
         /** @var array<string, Item> $itemsByRNo */
         $itemsByRNo = [];
         foreach ($file->boq?->allItems() ?? [] as $item) {
@@ -68,9 +70,9 @@ final class InvoiceWriter
 
         $root = $out->createElementNS(self::NS, 'GAEB');
         $out->appendChild($root);
-        $root->appendChild($this->buildGaebInfo($out, $invoice));
+        $root->appendChild($this->buildGaebInfo($out, $invoice->date, $invoice->progSystem));
         $root->appendChild($this->buildPrjInfo($out, $file));
-        $root->appendChild($this->buildInvoice($out, $source, $file, $invoice, $vat));
+        $root->appendChild($this->buildInvoice($out, $source, $file, $vat));
 
         return $out;
     }
@@ -95,34 +97,7 @@ final class InvoiceWriter
         }
     }
 
-    private function buildGaebInfo(XMLDocument $out, Invoice $invoice): Element
-    {
-        $info = $out->createElementNS(self::NS, 'GAEBInfo');
-        $info->appendChild($this->elem($out, 'Version', '3.3'));
-        $info->appendChild($this->elem($out, 'VersDate', '2021-05'));
-        $info->appendChild($this->elem($out, 'Date', $invoice->date ?? date('Y-m-d')));
-        $info->appendChild($this->elem($out, 'ProgSystem', $invoice->progSystem));
-
-        return $info;
-    }
-
-    private function buildPrjInfo(XMLDocument $out, GaebFile $file): Element
-    {
-        $name = $file->project->name;
-        if ($name === null) {
-            throw new GaebWriteException('Source project has no name; cannot write PrjInfo/NamePrj.');
-        }
-
-        $prj = $out->createElementNS(self::NS, 'PrjInfo');
-        $prj->appendChild($this->elem($out, 'NamePrj', $name));
-        if ($file->project->label !== null) {
-            $prj->appendChild($this->elem($out, 'LblPrj', $file->project->label));
-        }
-
-        return $prj;
-    }
-
-    private function buildInvoice(XMLDocument $out, XMLDocument $source, GaebFile $file, Invoice $invoice, BigDecimal $vat): Element
+    private function buildInvoice(XMLDocument $out, XMLDocument $source, GaebFile $file, BigDecimal $vat): Element
     {
         $srcRoot = $source->documentElement;
         $srcAward = $srcRoot !== null ? Dom::child($srcRoot, 'Award') : null;
@@ -143,11 +118,11 @@ final class InvoiceWriter
         $cnstSite->appendChild($this->elem($out, 'CnstSiteName', mb_substr((string) $file->project->name, 0, 60)));
         $el->appendChild($cnstSite);
 
-        [$boqEl, , $gross] = $this->buildBoQ($out, $source, $invoice, $vat);
+        [$boqEl, , $gross] = $this->buildBoQ($out, $source, $vat);
         $el->appendChild($boqEl);
 
-        $el->appendChild($this->buildInvoiceHeader($out, $invoice));
-        $el->appendChild($this->buildInvoiceParty($out, 'InvoiceCreator', $file->contractor, $invoice->creatorTaxNo));
+        $el->appendChild($this->buildInvoiceHeader($out));
+        $el->appendChild($this->buildInvoiceParty($out, 'InvoiceCreator', $file->contractor, $this->invoice->creatorTaxNo));
         $el->appendChild($this->buildInvoiceParty($out, 'InvoiceRecipient', $file->owner, null));
 
         $share = $out->createElementNS(self::NS, 'InvoiceShare');
@@ -159,7 +134,7 @@ final class InvoiceWriter
         $share->appendChild($this->elem($out, 'Total', (string) $gross));
         $el->appendChild($share);
 
-        foreach ($invoice->payments() as $payment) {
+        foreach ($this->invoice->payments() as $payment) {
             $el->appendChild($this->buildPaymentMade($out, $payment));
         }
 
@@ -168,8 +143,9 @@ final class InvoiceWriter
         return $el;
     }
 
-    private function buildInvoiceHeader(XMLDocument $out, Invoice $invoice): Element
+    private function buildInvoiceHeader(XMLDocument $out): Element
     {
+        $invoice = $this->invoice;
         $header = $out->createElementNS(self::NS, 'InvoiceHeader');
         $header->appendChild($this->elem($out, 'InvoiceNo', $invoice->invoiceNo));
         $header->appendChild($this->elem($out, 'InvoiceDate', $invoice->invoiceDate));
@@ -189,15 +165,12 @@ final class InvoiceWriter
 
     private function buildInvoiceParty(XMLDocument $out, string $name, ?Party $party, ?string $taxNo): Element
     {
-        $missing = [];
-        foreach (['name' => $party?->name, 'street' => $party?->street, 'zip' => $party?->zip, 'city' => $party?->city] as $field => $value) {
-            if ($value === null) {
-                $missing[] = $field;
-            }
-        }
-        if ($missing !== []) {
-            throw new GaebWriteException("{$name} address is missing required field(s): ".implode(', ', $missing));
-        }
+        $this->assertRequired([
+            'name' => $party?->name,
+            'street' => $party?->street,
+            'zip' => $party?->zip,
+            'city' => $party?->city,
+        ], "{$name} address is missing required field(s): ");
 
         $el = $out->createElementNS(self::NS, $name);
         $address = $out->createElementNS(self::NS, 'Address');
@@ -215,15 +188,12 @@ final class InvoiceWriter
 
     private function buildPaymentMade(XMLDocument $out, Payment $payment): Element
     {
-        $missing = [];
-        foreach (['total' => $payment->total, 'totalVat' => $payment->totalVat, 'paymentDate' => $payment->paymentDate, 'invoiceNo' => $payment->invoiceNo] as $field => $value) {
-            if ($value === null || $value === '') {
-                $missing[] = $field;
-            }
-        }
-        if ($missing !== []) {
-            throw new GaebWriteException('Payment is missing required field(s): '.implode(', ', $missing));
-        }
+        $this->assertRequired([
+            'total' => $payment->total,
+            'totalVat' => $payment->totalVat,
+            'paymentDate' => $payment->paymentDate,
+            'invoiceNo' => $payment->invoiceNo,
+        ], 'Payment is missing required field(s): ');
 
         $el = $out->createElementNS(self::NS, 'PaymentMade');
         $el->appendChild($this->elem($out, 'TotalVAT', (string) $this->decimal($payment->totalVat, 'payment totalVat')));
@@ -253,7 +223,7 @@ final class InvoiceWriter
     }
 
     /** @return array{Element, BigDecimal, BigDecimal} net and gross totals, so callers never recompute VAT/gross themselves */
-    private function buildBoQ(XMLDocument $out, XMLDocument $source, Invoice $invoice, BigDecimal $vat): array
+    private function buildBoQ(XMLDocument $out, XMLDocument $source, BigDecimal $vat): array
     {
         $srcRoot = $source->documentElement;
         $srcAward = $srcRoot !== null ? Dom::child($srcRoot, 'Award') : null;
@@ -275,7 +245,7 @@ final class InvoiceWriter
 
         $srcBody = Dom::child($srcBoQ, 'BoQBody');
         [$bodyEl, $net] = $srcBody !== null
-            ? $this->buildBoQBody($out, $srcBody, '', $invoice)
+            ? $this->buildBoQBody($out, $srcBody, '')
             : [null, BigDecimal::zero()->toScale(2)];
         if ($bodyEl === null) {
             // tgBoQ requires BoQBody — this cannot happen once quantities
@@ -312,52 +282,15 @@ final class InvoiceWriter
         return [$boq, $net, $gross];
     }
 
-    /** @return array{?Element, BigDecimal} */
-    private function buildBoQBody(XMLDocument $out, Element $srcBody, string $prefix, Invoice $invoice): array
-    {
-        $bodyEl = null;
-        $total = BigDecimal::zero()->toScale(2);
-
-        foreach ($srcBody->childNodes as $node) {
-            if (! $node instanceof Element) {
-                continue;
-            }
-            if ($node->localName === 'BoQCtgy') {
-                $built = $this->buildBoQCtgy($out, $node, $prefix, $invoice);
-                if ($built === null) {
-                    continue;
-                }
-                [$ctgyEl, $ctgyTotal] = $built;
-                $bodyEl ??= $out->createElementNS(self::NS, 'BoQBody');
-                $bodyEl->appendChild($ctgyEl);
-                $total = $total->plus($ctgyTotal);
-            } elseif ($node->localName === 'Itemlist') {
-                [$itemEls, $listTotal] = $this->buildItemlist($out, $node, $prefix, $invoice);
-                if ($itemEls === []) {
-                    continue;
-                }
-                $bodyEl ??= $out->createElementNS(self::NS, 'BoQBody');
-                $listEl = $out->createElementNS(self::NS, 'Itemlist');
-                foreach ($itemEls as $itemEl) {
-                    $listEl->appendChild($itemEl);
-                }
-                $bodyEl->appendChild($listEl);
-                $total = $total->plus($listTotal);
-            }
-        }
-
-        return [$bodyEl, $total];
-    }
-
     /** @return ?array{Element, BigDecimal} */
-    private function buildBoQCtgy(XMLDocument $out, Element $srcCtgy, string $prefix, Invoice $invoice): ?array
+    protected function buildBoQCtgy(XMLDocument $out, Element $srcCtgy, string $prefix): ?array
     {
         $rNoPart = Dom::attr($srcCtgy, 'RNoPart');
         $childPrefix = $prefix === '' ? $rNoPart : "{$prefix}.{$rNoPart}";
 
         $srcInnerBody = Dom::child($srcCtgy, 'BoQBody');
         [$bodyEl, $total] = $srcInnerBody !== null
-            ? $this->buildBoQBody($out, $srcInnerBody, $childPrefix, $invoice)
+            ? $this->buildBoQBody($out, $srcInnerBody, $childPrefix)
             : [null, BigDecimal::zero()->toScale(2)];
 
         if ($bodyEl === null) {
@@ -377,20 +310,17 @@ final class InvoiceWriter
         $ctgy->setAttribute('RNoPart', $rNoPart);
         $ctgy->appendChild($this->reNamespace($out, $lblTx));
         $ctgy->appendChild($bodyEl);
-
-        $totalsEl = $out->createElementNS(self::NS, 'Totals');
-        $totalsEl->appendChild($this->elem($out, 'Total', (string) $total));
-        $ctgy->appendChild($totalsEl);
+        $ctgy->appendChild($this->totals($out, $total));
 
         return [$ctgy, $total];
     }
 
     /** @return array{list<Element>, BigDecimal} */
-    private function buildItemlist(XMLDocument $out, Element $srcList, string $prefix, Invoice $invoice): array
+    protected function buildItemlist(XMLDocument $out, Element $srcList, string $prefix): array
     {
         $elements = [];
         $total = BigDecimal::zero()->toScale(2);
-        $quantities = $invoice->quantities();
+        $quantities = $this->invoice->quantities();
 
         foreach (Dom::children($srcList, 'Item') as $srcItem) {
             $rNoPart = Dom::attr($srcItem, 'RNoPart');
@@ -456,34 +386,5 @@ final class InvoiceWriter
         }
 
         return [$elements, $total];
-    }
-
-    /** Creates a DA89-namespaced element, optionally with text content — createElementNS has no 3-arg text shorthand in the native Dom API. */
-    private function elem(XMLDocument $out, string $name, ?string $text = null): Element
-    {
-        $el = $out->createElementNS(self::NS, $name);
-        if ($text !== null) {
-            $el->textContent = $text;
-        }
-
-        return $el;
-    }
-
-    /** Clones $el into the target document under the DA89 namespace, preserving structure and text. */
-    private function reNamespace(XMLDocument $out, Element $el): Element
-    {
-        $new = $out->createElementNS(self::NS, $el->localName);
-        foreach ($el->attributes ?? [] as $attr) {
-            $new->setAttribute($attr->name, $attr->value);
-        }
-        foreach ($el->childNodes as $child) {
-            if ($child instanceof Element) {
-                $new->appendChild($this->reNamespace($out, $child));
-            } elseif ($child instanceof Text) {
-                $new->appendChild($out->createTextNode($child->wholeText));
-            }
-        }
-
-        return $new;
     }
 }

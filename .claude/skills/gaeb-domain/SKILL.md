@@ -290,7 +290,8 @@ against `priced.x84`/`realistic.x84` while implementing the writer):
 
 `CTR/Address` (`tgAddress`, unrestricted by X84): required `Name1`,
 `Street`, `PCode`, `City`, in that order, then optional fields including
-`Phone` before `Email`. `Dto\Contractor` mirrors this — its six properties
+`Phone` before `Email`. `Dto\Party` mirrors this (the spec has a single
+`tgAddress` for all parties, so `Bid` takes a `Party` too) — its properties
 are all nullable, but `BidWriter::buildCTR()` throws `GaebWriteException`
 naming the missing field(s) if `name`/`street`/`zip`/`city` isn't fully set.
 

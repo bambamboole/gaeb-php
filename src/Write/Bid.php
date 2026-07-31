@@ -3,7 +3,7 @@
 namespace Bambamboole\Gaeb\Write;
 
 use Bambamboole\Gaeb\Assert;
-use Bambamboole\Gaeb\Dto\Contractor;
+use Bambamboole\Gaeb\Dto\Party;
 use Bambamboole\Gaeb\GaebWriteException;
 use Brick\Math\BigDecimal;
 use Brick\Math\BigNumber;
@@ -21,7 +21,7 @@ final class Bid
     private array $comments = [];
 
     public function __construct(
-        public readonly Contractor $contractor,
+        public readonly Party $contractor,
         public readonly ?string $currency = null,
         public readonly ?string $date = null,
         public readonly string $progSystem = 'bambamboole/gaeb',

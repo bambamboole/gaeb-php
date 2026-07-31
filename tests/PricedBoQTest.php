@@ -6,7 +6,7 @@ it('parses prices and totals from an x84 file', function () {
     $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/priced.x84');
 
     expect($gaeb->info->phase)->toBe(84)
-        ->and($gaeb->boq->total)->toBe(1450.00)
+        ->and($gaeb->boq->totals->total)->toBe(1450.00)
         ->and($gaeb->boq->categories)->toHaveCount(2);
 
     $item = $gaeb->boq->categories[0]->items[0];

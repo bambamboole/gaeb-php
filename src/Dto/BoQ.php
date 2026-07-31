@@ -11,7 +11,6 @@ final readonly class BoQ
     public function __construct(
         public ?string $label,
         public ?string $currency,
-        public ?float $total,
         public ?Totals $totals,
         public array $categories,
         public array $items,
