@@ -26,5 +26,7 @@ final readonly class Item
         /** @var list<SubDescription> */
         public array $subDescriptions,
         public ?float $billedQty,
+        public ?int $changeOrderNo = null,
+        public ?ChangeOrderStatus $changeOrderStatus = null,
     ) {}
 }

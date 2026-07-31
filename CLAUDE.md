@@ -90,8 +90,8 @@ exists so they can be added later.
   commit a third-party GAEB file unless the redistribution license chain
   terminates at the copyright holder — an MIT-licensed repo containing
   someone else's file grants nothing.
-- The six standard fixtures (`minimal.x83`, `boq.x83`, `priced.x84`,
-  `realistic.x84`, `contract.x86`, `invoice.x89`) must validate against the
+- The seven standard fixtures (`minimal.x83`, `boq.x83`, `priced.x84`,
+  `realistic.x84`, `contract.x86`, `nachtrag.x86`, `invoice.x89`) must validate against the
   official GAEB 3.3 XSDs when they're available — they span two XSD family
   dirs (`2021-05_Leistungsverzeichnis/` for X81–X86, `2021-05_Rechnung/` for
   X89): `tests/SchemaValidationTest.php` runs `Dom\XMLDocument::schemaValidate()`

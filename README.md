@@ -48,6 +48,15 @@ $gaeb->contractor; // ?Party — contractor/bidder (Auftragnehmer, CTR)
 $gaeb->award;      // ?AwardData — populated from AwardInfo on any phase; meaningfully filled (dates, duration) on X86
 ```
 
+Nachträge (change orders) are exposed on every level that carries them:
+`$gaeb->award->changeOrders` lists the `AwardInfo/COInfo` entries
+(`ChangeOrder` — number, phase, `ChangeOrderStatus`, initiator, reason,
+date), and `BoQ`, `BoQCategory` and `Item` each expose
+`changeOrderNo`/`changeOrderStatus` from their `CONo`/`COStatus` pair
+(`null` on main-contract elements). `createInvoice()` refuses to bill a
+Nachtrag position whose status is not `Approved` and carries the
+`CONo`/`COStatus` pair into the written X89.
+
 ## Item classification & totals
 
 Each `Item` also carries: `provisional` (`Provisional::WithoutTotal|WithTotal`

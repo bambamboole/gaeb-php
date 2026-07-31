@@ -2,6 +2,7 @@
 
 namespace Bambamboole\Gaeb\Write;
 
+use Bambamboole\Gaeb\Dto\ChangeOrderStatus;
 use Bambamboole\Gaeb\Dto\GaebFile;
 use Bambamboole\Gaeb\Dto\Item;
 use Bambamboole\Gaeb\Dto\Party;
@@ -48,6 +49,17 @@ final class InvoiceWriter
         }
         if ($notApplicable !== []) {
             throw new GaebWriteException('rNo(s) refer to notApplicable items: '.implode(', ', $notApplicable));
+        }
+        $unapproved = [];
+        foreach (array_keys($invoice->quantities()) as $rNo) {
+            $item = $itemsByRNo[$rNo];
+            // CONo 0 marks main-contract positions; only real Nachträge need approval.
+            if ($item->changeOrderNo !== null && $item->changeOrderNo > 0 && $item->changeOrderStatus !== ChangeOrderStatus::Approved) {
+                $unapproved[] = $rNo;
+            }
+        }
+        if ($unapproved !== []) {
+            throw new GaebWriteException('Nachtrag position(s) not approved for billing (COStatus must be Approved): '.implode(', ', $unapproved));
         }
         $vat = $this->resolveVat($source, $invoice);
 
@@ -416,6 +428,13 @@ final class InvoiceWriter
             $lumpSum = Dom::text($srcItem, 'LumpSumItem') === 'Yes';
             if ($lumpSum) {
                 $itemEl->appendChild($this->elem($out, 'LumpSumItem', 'Yes'));
+            }
+            $coNo = Dom::text($srcItem, 'CONo');
+            $coStatus = Dom::text($srcItem, 'COStatus');
+            // The schema requires the pair together; a lone CONo would be invalid.
+            if ($coNo !== null && $coStatus !== null) {
+                $itemEl->appendChild($this->elem($out, 'CONo', $coNo));
+                $itemEl->appendChild($this->elem($out, 'COStatus', $coStatus));
             }
             $itemEl->appendChild($this->elem($out, 'BillQty', (string) $billQty));
 
