@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-$xsdDir = getenv('GAEB_XSD_DIR') ?: __DIR__.'/../docs/gaeb/2021-05_Leistungsverzeichnis';
+$xsdDir = getenv('GAEB_XSD_DIR') ?: __DIR__.'/../docs/gaeb/3.3/2021-05_Leistungsverzeichnis';
 
 $fixtures = [
     'minimal.x83' => 'GAEB_DA_XML_83_3.3_2021-05.xsd',

@@ -21,14 +21,13 @@ against the official GAEB 3.3 XSDs (`GAEB_DA_XML_83_3.3_2021-05.xsd` /
 parser's leniency fallbacks in `tests/LenientParsingTest.php`. Never make
 it schema-valid.
 
-To validate locally: place the official GAEB 3.3 "Leistungsverzeichnis"
-XSD set (not redistributable, so it isn't in this repo) under
-`docs/gaeb/2021-05_Leistungsverzeichnis/`, or point `GAEB_XSD_DIR` at
-wherever you keep them, then run:
+To validate: the official GAEB 3.3 XSD set is committed unmodified under
+`docs/gaeb/3.3/` (provenance in `docs/gaeb/README.md`); point
+`GAEB_XSD_DIR` elsewhere to override, then run:
 
 ```
 vendor/bin/pest tests/SchemaValidationTest.php
 ```
 
-The test skips entirely when no XSD directory is found, so CI (which has
-no local copy) stays green without it.
+The test skips entirely when no XSD directory is found; with the XSDs
+committed, it runs in CI as well.

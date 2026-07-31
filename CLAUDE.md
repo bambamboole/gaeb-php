@@ -53,9 +53,9 @@ exists so they can be added later.
   someone else's file grants nothing.
 - The four standard fixtures (`minimal.x83`, `boq.x83`, `priced.x84`,
   `realistic.x84`) must validate against the official GAEB 3.3 XSDs when
-  they're available locally: `tests/SchemaValidationTest.php` runs
-  `DOMDocument::schemaValidate()` against `docs/gaeb/` (or `GAEB_XSD_DIR`)
-  and skips cleanly when the XSDs aren't present (e.g. CI).
+  they're available: `tests/SchemaValidationTest.php` runs
+  `DOMDocument::schemaValidate()` against `docs/gaeb/3.3/` (or
+  `GAEB_XSD_DIR`) and skips cleanly when the XSDs aren't present.
   `tests/fixtures/nonconforming.x83` is deliberately schema-invalid and
   covers the parser's leniency fallbacks instead.
 - Real-world element variants matter more than naive spec reading: keep
@@ -82,9 +82,12 @@ exists so they can be added later.
 - Never commit agent planning artifacts or scratch files
   (`docs/superpowers/`, `.superpowers/` and similar) — both are
   git-ignored on purpose.
-- Never commit `docs/gaeb/` — it holds the official GAEB e.V. schema set
-  and documentation, which is copyrighted and not redistributable. It is
-  git-ignored; treat it as a local dev reference only.
+- The official GAEB 3.3 XSDs are committed UNMODIFIED under
+  `docs/gaeb/3.3/` with provenance in `docs/gaeb/README.md` (they are
+  publicly distributed by GAEB without stated restrictions; attribution
+  and byte-identical redistribution are the terms we hold ourselves to).
+  Never modify them. Never commit the GAEB Fachdokumentation PDF — it is
+  explicitly © DIN and stays git-ignored (`docs/gaeb/*.pdf`).
 
 ## Skills
 

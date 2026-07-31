@@ -127,16 +127,18 @@ preserved in `Item->descriptionXml` for consumers needing formatting.
 - Set the namespace to match the phase, e.g.
   `http://www.gaeb.de/GAEB_DA_XML/DA84/3.3` with `<DP>84</DP>`.
 
-## Official XSDs (local)
+## Official XSDs
 
-The official GAEB 3.3 "Leistungsverzeichnis" XSD set lives git-ignored at
-`docs/gaeb/2021-05_Leistungsverzeichnis/` — copyrighted GAEB e.V. material,
-never commit it. `tests/SchemaValidationTest.php` validates the four
-standard fixtures (`minimal.x83`, `boq.x83`, `priced.x84`, `realistic.x84`)
-against these XSDs with `DOMDocument::schemaValidate()`; every test in that
-file skips when the directory is absent (CI has no XSDs), so the gate is
-opt-in for local development. Point `GAEB_XSD_DIR` at a different location
-to override. `tests/fixtures/nonconforming.x83` is intentionally
+The official GAEB 3.3 XSD set is committed UNMODIFIED under
+`docs/gaeb/3.3/` (versioned per GAEB release). Provenance, source URL and
+copyright attribution live in `docs/gaeb/README.md` — the schemas are
+GAEB/DIN works redistributed byte-identically; NEVER modify them, and
+never commit the Fachdokumentation PDF (© DIN, git-ignored).
+`tests/SchemaValidationTest.php` validates the four standard fixtures
+(`minimal.x83`, `boq.x83`, `priced.x84`, `realistic.x84`) against
+`docs/gaeb/3.3/2021-05_Leistungsverzeichnis/` with
+`DOMDocument::schemaValidate()`; tests skip when the directory is absent.
+Point `GAEB_XSD_DIR` at a different location to override. `tests/fixtures/nonconforming.x83` is intentionally
 schema-INVALID — it exists to exercise the parser's leniency fallbacks
 (`tests/LenientParsingTest.php`) and is deliberately excluded from
 `SchemaValidationTest`.
