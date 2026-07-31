@@ -160,6 +160,18 @@ it('writes an explicitly supplied bid date instead of today', function () {
     expect($doc->createBid($bid)->toString())->toContain('<Date>2020-01-02</Date>');
 });
 
+it('stamps a custom progSystem and defaults to the package name', function () {
+    $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
+
+    $bid = makeBid();
+    priceAll($doc, $bid);
+    expect($doc->createBid($bid)->toString())->toContain('<ProgSystem>bambamboole/gaeb-php</ProgSystem>');
+
+    $custom = new Bid($bid->contractor, progSystem: 'my-erp 1.0');
+    priceAll($doc, $custom);
+    expect($doc->createBid($custom)->file()->info->program)->toBe('my-erp 1.0');
+});
+
 it('throws when the bid contains no items', function () {
     $source = <<<'XML'
     <?xml version="1.0" encoding="UTF-8"?>

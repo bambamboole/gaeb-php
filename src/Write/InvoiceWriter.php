@@ -89,7 +89,7 @@ final class InvoiceWriter
         $info->appendChild($this->elem($out, 'Version', '3.3'));
         $info->appendChild($this->elem($out, 'VersDate', '2021-05'));
         $info->appendChild($this->elem($out, 'Date', $invoice->date ?? date('Y-m-d')));
-        $info->appendChild($this->elem($out, 'ProgSystem', 'bambamboole/gaeb-php'));
+        $info->appendChild($this->elem($out, 'ProgSystem', $invoice->progSystem));
 
         return $info;
     }

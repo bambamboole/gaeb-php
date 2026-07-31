@@ -24,6 +24,7 @@ final class Bid
         public readonly Contractor $contractor,
         public readonly ?string $currency = null,
         public readonly ?string $date = null,
+        public readonly string $progSystem = 'bambamboole/gaeb-php',
     ) {
         if ($date !== null) {
             Assert::date($date);
