@@ -9,6 +9,9 @@ use Bambamboole\GaebParser\Dto\GaebInfo;
 use Bambamboole\GaebParser\Dto\Item;
 use Bambamboole\GaebParser\Dto\ProjectInfo;
 use Bambamboole\GaebParser\Dto\Provisional;
+use Bambamboole\GaebParser\Dto\SubDescription;
+use Bambamboole\GaebParser\Dto\TextComplement;
+use Bambamboole\GaebParser\Dto\TextComplementKind;
 use Bambamboole\GaebParser\Dto\Totals;
 use Bambamboole\GaebParser\GaebParseException;
 
@@ -165,8 +168,37 @@ final class GaebXmlDriver implements Driver
         $rNoIndex = $item->getAttribute('RNoIndex');
         $rNoSegment = $rNoIndex !== '' ? "{$rNoPart}.{$rNoIndex}" : $rNoPart;
         $description = self::child($item, 'Description');
-        $complete = $description !== null ? self::child($description, 'CompleteText') : null;
+        [$shortText, $longText, $descriptionXml] = self::extractDescriptionTexts($description);
 
+        return new Item(
+            rNo: implode('.', [...$prefix, $rNoSegment]),
+            rNoPart: $rNoPart,
+            qty: self::floatVal($item, 'Qty'),
+            unit: self::text($item, 'QU'),
+            shortText: $shortText,
+            longText: $longText,
+            descriptionXml: $descriptionXml,
+            unitPrice: self::floatVal($item, 'UP'),
+            totalPrice: self::floatVal($item, 'IT'),
+            lumpSum: self::text($item, 'LumpSumItem') === 'Yes',
+            provisional: Provisional::tryFrom((string) self::text($item, 'Provis')),
+            hourlyWork: self::text($item, 'HourIt') === 'Yes',
+            notApplicable: self::text($item, 'NotAppl') === 'Yes',
+            alternativeGroupNo: self::intVal($item, 'ALNGroupNo'),
+            alternativeSerialNo: self::intVal($item, 'ALNSerNo'),
+            textComplements: self::parseTextComplements($description),
+            bidderComment: self::parseBidderComment($item),
+            subDescriptions: self::parseSubDescriptions($item),
+        );
+    }
+
+    /** @return array{?string, ?string, ?string} shortText, longText, descriptionXml */
+    private static function extractDescriptionTexts(?\DOMElement $description): array
+    {
+        if ($description === null) {
+            return [null, null, null];
+        }
+        $complete = self::child($description, 'CompleteText');
         $shortText = null;
         $longText = null;
         if ($complete !== null) {
@@ -176,23 +208,65 @@ final class GaebXmlDriver implements Driver
             $longText = $detail->length > 0 ? self::flatten($detail->item(0)) : null;
         }
 
-        return new Item(
-            rNo: implode('.', [...$prefix, $rNoSegment]),
-            rNoPart: $rNoPart,
-            qty: self::floatVal($item, 'Qty'),
-            unit: self::text($item, 'QU'),
-            shortText: $shortText,
-            longText: $longText,
-            descriptionXml: $description?->ownerDocument?->saveXML($description) ?: null,
-            unitPrice: self::floatVal($item, 'UP'),
-            totalPrice: self::floatVal($item, 'IT'),
-            lumpSum: self::text($item, 'LumpSumItem') === 'Yes',
-            provisional: Provisional::tryFrom((string) self::text($item, 'Provis')),
-            hourlyWork: self::text($item, 'HourIt') === 'Yes',
-            notApplicable: self::text($item, 'NotAppl') === 'Yes',
-            alternativeGroupNo: self::intVal($item, 'ALNGroupNo'),
-            alternativeSerialNo: self::intVal($item, 'ALNSerNo'),
-        );
+        return [$shortText, $longText, $description->ownerDocument?->saveXML($description) ?: null];
+    }
+
+    /** @return list<TextComplement> */
+    private static function parseTextComplements(?\DOMElement $description): array
+    {
+        if ($description === null) {
+            return [];
+        }
+        $complements = [];
+        foreach ($description->getElementsByTagNameNS('*', 'TextComplement') as $node) {
+            $kind = TextComplementKind::tryFrom($node->getAttribute('Kind'));
+            if ($kind === null) {
+                continue;
+            }
+            $markLabel = $node->getAttribute('MarkLbl');
+            $complements[] = new TextComplement(
+                markLabel: ctype_digit($markLabel) ? (int) $markLabel : 0,
+                kind: $kind,
+                caption: self::flatten(self::child($node, 'ComplCaption')),
+                body: self::flatten(self::child($node, 'ComplBody')),
+                tail: self::flatten(self::child($node, 'ComplTail')),
+            );
+        }
+
+        return $complements;
+    }
+
+    private static function parseBidderComment(\DOMElement $item): ?string
+    {
+        $comments = [];
+        foreach (self::children($item, 'BidComm') as $comm) {
+            $flattened = self::flatten($comm);
+            if ($flattened !== null) {
+                $comments[] = $flattened;
+            }
+        }
+
+        return $comments === [] ? null : implode("\n", $comments);
+    }
+
+    /** @return list<SubDescription> */
+    private static function parseSubDescriptions(\DOMElement $item): array
+    {
+        $subs = [];
+        foreach (self::children($item, 'SubDescr') as $sub) {
+            [$shortText, $longText, $descriptionXml] = self::extractDescriptionTexts(self::child($sub, 'Description'));
+            $subs[] = new SubDescription(
+                subDNo: self::text($sub, 'SubDNo'),
+                shortText: $shortText,
+                longText: $longText,
+                descriptionXml: $descriptionXml,
+                qty: self::floatVal($sub, 'Qty'),
+                unit: self::text($sub, 'QU'),
+                unitPrice: self::floatVal($sub, 'UP'),
+            );
+        }
+
+        return $subs;
     }
 
     private static function child(\DOMElement $el, string $name): ?\DOMElement

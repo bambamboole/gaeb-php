@@ -20,5 +20,10 @@ final readonly class Item
         public bool $notApplicable,
         public ?int $alternativeGroupNo,
         public ?int $alternativeSerialNo,
+        /** @var list<TextComplement> */
+        public array $textComplements,
+        public ?string $bidderComment,
+        /** @var list<SubDescription> */
+        public array $subDescriptions,
     ) {}
 }
