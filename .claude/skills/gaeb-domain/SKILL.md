@@ -35,9 +35,13 @@ existing DTO graph; never invent a parallel model.
 | 86 | Zuschlag / Auftrag | award / contract | yes |
 | 87 | Auftragsbestätigung | order confirmation (AN→AG) | yes |
 | 89 | Rechnung | invoice | yes (`BillQty`) |
+| 89B | Rechnungsbegründende Unterlage | e-invoice audit attachment (XRechnung/ZUGFeRD companion) | yes (`BillQty`) |
 
-Phase detection: `Award/DP` element when numeric, else the `DA(8x)`
-segment of the root namespace.
+Phase detection: `Award/DP`/`Invoice/DP` element, else the `DA(8x…)`
+segment of the root namespace. DP tokens are NOT always numeric — X89B's
+`tgDP` is the literal string `89B` (and `86ZR`/`86ZE` exist in the wild):
+`GaebInfo->dp` carries the raw token, `GaebInfo->phase` its leading digits;
+`validate()` resolves the XSD file by token.
 
 ## XML anatomy (elements this package parses)
 
@@ -228,6 +232,23 @@ until clean)
   quantities and any prior payments (`Invoice`/`Payment` in
   `src/Write/`).
 
+- **X89B** (Rechnungsbegründende Unterlage, verified while implementing
+  `createSupportingDocument` + `supporting.x89b`): the audit attachment
+  accompanying an XRechnung/ZUGFeRD e-invoice. `tgInvoice` order: `DP`
+  (literal `89B`), `OWN?`, `Requester*`, `CTR?`, `(CnstSite, NotifSite?)*`
+  (CnstSite OPTIONAL here, unlike X89 where it's required), `AddText*`,
+  `BoQ?`, `InvoiceHeader?`, `InvoiceCreator` (required, LAST) — there is
+  NO `InvoiceRecipient`, `InvoiceShare`, `PaymentMade`, `CheckNote`,
+  `Terms`, or invoice-level `TotalGross`; the commercial data lives in the
+  e-invoice. `tgInvoiceHeader` shrinks to `RefInvoiceNo?` (the e-invoice's
+  number) + `ServiceProvisionStartDate/EndDate`. The BoQ carries the same
+  full billing LV as X89 (BoQInfo `Totals` incl. `TotalGross` stays).
+  Write: `createSupportingDocument(Invoice)` runs `InvoiceWriter` (all
+  strict rules), then projects into DA89B via `Dom::cloneInto` — strips
+  the commercial elements and rebuilds the header; `Invoice::$invoiceNo`
+  becomes `RefInvoiceNo`. Read: `InvoiceData->invoiceNo` falls back to
+  `RefInvoiceNo`.
+
 ## Nachträge (change orders)
 
 Verified against the 3.3 XSDs while implementing the Nachtrag read +
@@ -361,14 +382,15 @@ The official GAEB 3.3 XSD set is committed UNMODIFIED under
 copyright attribution live in `docs/gaeb/README.md` — the schemas are
 GAEB/DIN works redistributed byte-identically; NEVER modify them, and
 never commit the Fachdokumentation PDF (© DIN, git-ignored).
-`tests/SchemaValidationTest.php` validates the eleven standard fixtures
+`tests/SchemaValidationTest.php` validates the twelve standard fixtures
 (`description.x80`, `minimal.x83`, `boq.x83`, `markup.x83`, `priced.x84`,
 `components.x84`, `realistic.x84`,
-`contract.x86`, `nachtrag.x86`, `confirmation.x87`, `invoice.x89`) against
+`contract.x86`, `nachtrag.x86`, `confirmation.x87`, `invoice.x89`,
+`supporting.x89b`) against
 `docs/gaeb/3.3/` with `Dom\XMLDocument::schemaValidate()`;
 they span two XSD family dirs — `2021-05_Leistungsverzeichnis/` for
-X80–X87, `2021-05_Rechnung/` for X89 — and tests skip when the directory is
-absent. `GAEB_XSD_DIR` now points at the `3.3` root (not a family
+X80–X87, `2021-05_Rechnung/` for X89/X89B — and tests skip when the
+directory is absent. `GAEB_XSD_DIR` now points at the `3.3` root (not a family
 subdirectory); point it at a different location to override. `tests/fixtures/nonconforming.x83` is intentionally
 schema-INVALID — it exists to exercise the parser's leniency fallbacks
 (`tests/LenientParsingTest.php`) and is deliberately excluded from
