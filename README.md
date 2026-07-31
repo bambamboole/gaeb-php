@@ -64,7 +64,7 @@ absent). `subDescriptions` (`list<SubDescription>`) are the item's
 Find the gaps a bidder still needs to fill:
 
 ```php
-$gaps = array_filter($item->textComplements, fn ($c) => $c->kind === TextComplementKind::Bidder);
+$gaps = array_values(array_filter($item->textComplements, fn ($c) => $c->kind === TextComplementKind::Bidder));
 ```
 
 ## Custom drivers / instance API

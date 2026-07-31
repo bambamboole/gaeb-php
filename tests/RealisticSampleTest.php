@@ -45,6 +45,7 @@ it('parses bid data on the bid-submission item: a filled gap, bidder comments an
     $item = $items[0];
 
     expect($item->rNo)->toBe('01.0010')
+        ->and($item->longText)->toBe('Fabrikat: Muster GmbH, Typ ABC-500')
         ->and($item->textComplements)->toHaveCount(1);
 
     $gap = $item->textComplements[0];

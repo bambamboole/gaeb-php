@@ -332,6 +332,9 @@ final class GaebXmlDriver implements Driver
         }
         $lines = [];
         foreach ($paragraphs as $p) {
+            if (self::hasAncestorP($p, $el)) {
+                continue;
+            }
             $line = trim($p->textContent);
             if ($line !== '') {
                 $lines[] = $line;
@@ -339,5 +342,19 @@ final class GaebXmlDriver implements Driver
         }
 
         return $lines === [] ? null : implode("\n", $lines);
+    }
+
+    /** Whether $node has a <p> ancestor strictly between it and $el (exclusive). */
+    private static function hasAncestorP(\DOMElement $node, \DOMElement $el): bool
+    {
+        $parent = $node->parentNode;
+        while ($parent instanceof \DOMElement && $parent !== $el) {
+            if ($parent->localName === 'p') {
+                return true;
+            }
+            $parent = $parent->parentNode;
+        }
+
+        return false;
     }
 }
