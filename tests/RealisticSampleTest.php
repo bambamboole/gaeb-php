@@ -4,7 +4,7 @@ use Bambamboole\Gaeb\Dto\TextComplementKind;
 use Bambamboole\Gaeb\GaebParser;
 
 it('parses the self-authored realistic sample fixture', function () {
-    $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/realistic.x84');
+    $gaeb = GaebParser::fromString(fixture('realistic.x84'));
 
     expect($gaeb->project->name)->toBe('Musterprojekt Lagerhalle Nord')
         ->and($gaeb->project->currency)->toBe('EUR')
@@ -41,7 +41,7 @@ it('parses the self-authored realistic sample fixture', function () {
 });
 
 it('parses bid data on the bid-submission item: a filled gap, bidder comments and a priced sub-description', function () {
-    $items = iterator_to_array(GaebParser::fromFile(__DIR__.'/fixtures/realistic.x84')->boq->allItems(), false);
+    $items = iterator_to_array(GaebParser::fromString(fixture('realistic.x84'))->boq->allItems(), false);
     $item = $items[0];
 
     expect($item->rNo)->toBe('01.0010')
@@ -78,7 +78,7 @@ it('parses bid data on the bid-submission item: a filled gap, bidder comments an
 });
 
 it('parses the totals breakdown', function () {
-    $totals = GaebParser::fromFile(__DIR__.'/fixtures/realistic.x84')->boq->totals;
+    $totals = GaebParser::fromString(fixture('realistic.x84'))->boq->totals;
 
     expect($totals->total)->toBeDecimal(9649.00)
         ->and($totals->discountPercent)->toBeDecimal(5.0)

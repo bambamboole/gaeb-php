@@ -5,7 +5,7 @@ use Bambamboole\Gaeb\GaebParser;
 use Bambamboole\Gaeb\GaebWriteException;
 
 it('re-stamps an X86 contract as a schema-valid X87 order confirmation', function () {
-    $contract = GaebDocument::open(__DIR__.'/fixtures/contract.x86');
+    $contract = GaebDocument::fromString(fixture('contract.x86'));
 
     $x87 = $contract->createOrderConfirmation(date: '2026-06-20', progSystem: 'my-erp 1.0');
 
@@ -19,7 +19,7 @@ it('re-stamps an X86 contract as a schema-valid X87 order confirmation', functio
 });
 
 it('preserves the contract content in the confirmation', function () {
-    $contract = GaebDocument::open(__DIR__.'/fixtures/contract.x86');
+    $contract = GaebDocument::fromString(fixture('contract.x86'));
 
     $gaeb = GaebParser::fromString($contract->createOrderConfirmation()->toString());
 
@@ -31,9 +31,9 @@ it('preserves the contract content in the confirmation', function () {
 });
 
 it('throws when the source phase is not X86', function () {
-    GaebDocument::open(__DIR__.'/fixtures/boq.x83')->createOrderConfirmation();
+    GaebDocument::fromString(fixture('boq.x83'))->createOrderConfirmation();
 })->throws(GaebWriteException::class, 'createOrderConfirmation requires an X86 source, got X83');
 
 it('rejects an invalid confirmation date', function () {
-    GaebDocument::open(__DIR__.'/fixtures/contract.x86')->createOrderConfirmation(date: '20.06.2026');
+    GaebDocument::fromString(fixture('contract.x86'))->createOrderConfirmation(date: '20.06.2026');
 })->throws(GaebWriteException::class, 'Invalid date');

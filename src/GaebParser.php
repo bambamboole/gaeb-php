@@ -11,19 +11,9 @@ final class GaebParser
     /** @param list<Driver> $drivers */
     public function __construct(private readonly array $drivers = [new GaebXmlDriver]) {}
 
-    public static function fromFile(string $path): GaebFile
-    {
-        return (new self)->parseFile($path);
-    }
-
     public static function fromString(string $content): GaebFile
     {
         return (new self)->parse($content);
-    }
-
-    public function parseFile(string $path): GaebFile
-    {
-        return $this->parse(Io::read($path));
     }
 
     public function parse(string $content): GaebFile

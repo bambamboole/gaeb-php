@@ -15,7 +15,7 @@ it('parses via the instance api', function () {
 });
 
 it('parses a file via the instance api', function () {
-    $gaeb = (new GaebParser)->parseFile(__DIR__.'/fixtures/minimal.x83');
+    $gaeb = (new GaebParser)->parse(fixture('minimal.x83'));
 
     expect($gaeb->info->phase)->toBe(83);
 });

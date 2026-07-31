@@ -10,7 +10,7 @@ use Brick\Math\BigDecimal;
 
 function contractDocument(): GaebDocument
 {
-    return GaebDocument::open(__DIR__.'/fixtures/contract.x86');
+    return GaebDocument::fromString(fixture('contract.x86'));
 }
 
 it('creates a schema-valid cumulative X89 invoice from the X86 contract', function () {
@@ -99,7 +99,7 @@ it('rejects a non-X86 source', function () {
     $invoice = new Invoice('RE-1', '2026-10-31', InvoiceType::Deduction, '2026-09-01', '2026-10-31', 'DE123456789', vatPercent: '19');
     $invoice->billQty('01.0010', '1');
 
-    GaebDocument::open(__DIR__.'/fixtures/boq.x83')->createInvoice($invoice);
+    GaebDocument::fromString(fixture('boq.x83'))->createInvoice($invoice);
 })->throws(GaebWriteException::class, 'requires an X86 source');
 
 it('rejects a missing VAT rate instead of defaulting', function () {

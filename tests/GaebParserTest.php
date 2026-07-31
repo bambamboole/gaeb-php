@@ -11,12 +11,8 @@ it('throws on xml without GAEB root', function () {
     GaebParser::fromString('<?xml version="1.0"?><Other/>');
 })->throws(GaebParseException::class);
 
-it('throws on unreadable file', function () {
-    GaebParser::fromFile(__DIR__.'/fixtures/does-not-exist.x83');
-})->throws(GaebParseException::class);
-
 it('parses file and project metadata', function () {
-    $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/minimal.x83');
+    $gaeb = GaebParser::fromString(fixture('minimal.x83'));
 
     expect($gaeb->info->version)->toBe('3.3')
         ->and($gaeb->info->phase)->toBe(83)

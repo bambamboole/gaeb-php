@@ -31,7 +31,7 @@ function priceAll(GaebDocument $doc, Bid $bid, float $up = 10.0): void
 }
 
 it('creates a schema-valid x84 bid from an x83 tender', function () {
-    $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
+    $doc = GaebDocument::fromString(fixture('boq.x83'));
     $bid = makeBid();
     priceAll($doc, $bid);
     $bid->fillGap('01.02.0010', 2, 'Fabrikat Musterrohr');
@@ -43,7 +43,7 @@ it('creates a schema-valid x84 bid from an x83 tender', function () {
 });
 
 it('produces a bid the parser reads back with matching structure and prices', function () {
-    $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
+    $doc = GaebDocument::fromString(fixture('boq.x83'));
     $bid = makeBid();
     priceAll($doc, $bid, 10.0);
 
@@ -74,7 +74,7 @@ it('computes the total with classification exclusions', function () {
     //   03.0040.1  qty 10, ALNGroupNo 1 ALNSerNo 2 -> 100.00 (EXCLUDED; alternative, serial != 1)
     //   03.0050    qty 20, HourIt=Yes -> 200.00 (included; hourly work counts)
     // Total = 1000 + 10 + 50 + 100 + 200 = 1360.00
-    $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
+    $doc = GaebDocument::fromString(fixture('boq.x83'));
     $bid = makeBid();
     priceAll($doc, $bid, 10.0);
 
@@ -84,7 +84,7 @@ it('computes the total with classification exclusions', function () {
 });
 
 it('round-trips gap fills and comments', function () {
-    $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
+    $doc = GaebDocument::fromString(fixture('boq.x83'));
     $bid = makeBid();
     priceAll($doc, $bid);
     $bid->fillGap('01.02.0010', 2, 'Fabrikat Musterrohr');
@@ -149,7 +149,7 @@ it('excludes notApplicable items from the bid and its totals', function () {
 });
 
 it('writes an explicitly supplied bid date instead of today', function () {
-    $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
+    $doc = GaebDocument::fromString(fixture('boq.x83'));
     $bid = new Bid(new Party(
         name: 'Muster Bau GmbH',
         street: 'Handwerkerweg 1',
@@ -164,7 +164,7 @@ it('writes an explicitly supplied bid date instead of today', function () {
 });
 
 it('stamps a custom progSystem and defaults to the package name', function () {
-    $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
+    $doc = GaebDocument::fromString(fixture('boq.x83'));
 
     $bid = makeBid();
     priceAll($doc, $bid);
@@ -209,7 +209,7 @@ it('throws when the bid contains no items', function () {
 })->throws(GaebWriteException::class, 'Bid contains no items');
 
 it('throws when priceable items are missing prices', function () {
-    $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
+    $doc = GaebDocument::fromString(fixture('boq.x83'));
     $bid = makeBid();
     $bid->setUnitPrice('01.02.0010', 12.5);
 
@@ -217,7 +217,7 @@ it('throws when priceable items are missing prices', function () {
 })->throws(GaebWriteException::class, '01.02.0020');
 
 it('throws on unknown rNo', function () {
-    $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
+    $doc = GaebDocument::fromString(fixture('boq.x83'));
     $bid = makeBid();
     priceAll($doc, $bid);
     $bid->setUnitPrice('99.9999', 1.0);
@@ -226,7 +226,7 @@ it('throws on unknown rNo', function () {
 })->throws(GaebWriteException::class, '99.9999');
 
 it('rounds the unit price before computing IT so emitted UP x Qty == IT exactly', function () {
-    $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
+    $doc = GaebDocument::fromString(fixture('boq.x83'));
     $bid = makeBid();
     priceAll($doc, $bid);
     $bid->setUnitPrice('01.02.0010', 12.3456); // qty 100.000
@@ -286,7 +286,7 @@ it('throws when a priced/commented/gap-filled rNo resolves to a notApplicable it
 })->throws(GaebWriteException::class, '0010');
 
 it('throws when a gap fill markLabel has no matching Bidder complement on the source item', function () {
-    $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
+    $doc = GaebDocument::fromString(fixture('boq.x83'));
     $bid = makeBid();
     priceAll($doc, $bid);
     $bid->fillGap('01.02.0010', 99, 'phantom');
@@ -368,7 +368,7 @@ it('succeeds without a source currency when Bid::$currency is set', function () 
 });
 
 it('throws when the source phase is not X81-X83', function () {
-    $doc = GaebDocument::open(__DIR__.'/fixtures/priced.x84');
+    $doc = GaebDocument::fromString(fixture('priced.x84'));
     $bid = makeBid();
 
     $doc->createBid($bid);
@@ -508,7 +508,7 @@ it('throws when the Bid date is calendar-invalid', function () {
 })->throws(GaebWriteException::class, 'Invalid date (expected YYYY-MM-DD): 2024-13-45');
 
 it('writes a not-offered item without UP/IT and excludes it from totals', function () {
-    $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
+    $doc = GaebDocument::fromString(fixture('boq.x83'));
     $bid = makeBid();
     $skipped = null;
     foreach ($doc->file()->boq->allItems() as $item) {
@@ -549,7 +549,7 @@ it('writes a not-offered item without UP/IT and excludes it from totals', functi
 });
 
 it('throws when a position is both priced and marked not offered', function () {
-    $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
+    $doc = GaebDocument::fromString(fixture('boq.x83'));
     $bid = makeBid();
     priceAll($doc, $bid);
     foreach ($doc->file()->boq->allItems() as $item) {
@@ -563,7 +563,7 @@ it('throws when a position is both priced and marked not offered', function () {
 })->throws(GaebWriteException::class, 'marked notOffered but also priced');
 
 it('throws when notOffered references an unknown rNo', function () {
-    $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
+    $doc = GaebDocument::fromString(fixture('boq.x83'));
     $bid = makeBid();
     priceAll($doc, $bid);
     $bid->setNotOffered('99.9999');

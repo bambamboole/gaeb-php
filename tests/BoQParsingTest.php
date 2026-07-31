@@ -5,13 +5,13 @@ use Bambamboole\Gaeb\Dto\TextComplementKind;
 use Bambamboole\Gaeb\GaebParser;
 
 it('returns null boq when the file has none', function () {
-    $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/minimal.x83');
+    $gaeb = GaebParser::fromString(fixture('minimal.x83'));
 
     expect($gaeb->boq)->toBeNull();
 });
 
 it('parses the category tree', function () {
-    $boq = GaebParser::fromFile(__DIR__.'/fixtures/boq.x83')->boq;
+    $boq = GaebParser::fromString(fixture('boq.x83'))->boq;
 
     expect($boq->label)->toBe('Leistungsverzeichnis Testhalle')
         ->and($boq->currency)->toBe('EUR')
@@ -29,7 +29,7 @@ it('parses the category tree', function () {
 });
 
 it('parses items with quantities, texts and flags', function () {
-    $boq = GaebParser::fromFile(__DIR__.'/fixtures/boq.x83')->boq;
+    $boq = GaebParser::fromString(fixture('boq.x83'))->boq;
     [$first, $second] = $boq->categories[0]->categories[0]->items;
 
     expect($first->rNo)->toBe('01.02.0010')
@@ -57,7 +57,7 @@ it('parses items with quantities, texts and flags', function () {
 });
 
 it('parses bid data on the owner-authored item: text complements and a sub-description', function () {
-    $boq = GaebParser::fromFile(__DIR__.'/fixtures/boq.x83')->boq;
+    $boq = GaebParser::fromString(fixture('boq.x83'))->boq;
     $item = $boq->categories[0]->categories[0]->items[0];
 
     expect($item->rNo)->toBe('01.02.0010')
@@ -97,7 +97,7 @@ it('parses bid data on the owner-authored item: text complements and a sub-descr
 });
 
 it('parses item classification flags', function () {
-    $items = iterator_to_array(GaebParser::fromFile(__DIR__.'/fixtures/boq.x83')->boq->allItems(), false);
+    $items = iterator_to_array(GaebParser::fromString(fixture('boq.x83'))->boq->allItems(), false);
     $byRNo = [];
     foreach ($items as $item) {
         $byRNo[$item->rNo] = $item;

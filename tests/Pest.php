@@ -11,3 +11,8 @@ expect()->extend('toBeDecimal', function (float|int|string $expected) {
 
     return $this;
 });
+
+function fixture(string $name): string
+{
+    return (string) file_get_contents(__DIR__.'/fixtures/'.$name);
+}

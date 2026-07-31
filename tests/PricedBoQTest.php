@@ -3,7 +3,7 @@
 use Bambamboole\Gaeb\GaebParser;
 
 it('parses prices and totals from an x84 file', function () {
-    $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/priced.x84');
+    $gaeb = GaebParser::fromString(fixture('priced.x84'));
 
     expect($gaeb->info->phase)->toBe(84)
         ->and($gaeb->boq->totals->total)->toBeDecimal(1450.00)
@@ -16,7 +16,7 @@ it('parses prices and totals from an x84 file', function () {
 
 it('iterates all items flattened with resolved position numbers', function () {
     $items = iterator_to_array(
-        GaebParser::fromFile(__DIR__.'/fixtures/priced.x84')->boq->allItems(),
+        GaebParser::fromString(fixture('priced.x84'))->boq->allItems(),
         false,
     );
 
