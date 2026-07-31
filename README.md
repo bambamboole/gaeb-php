@@ -11,7 +11,7 @@ throwing.
 composer require bambamboole/gaeb-parser
 ```
 
-Requires PHP `^8.3` and the `ext-dom` extension (usually bundled). No other
+Requires PHP `^8.4` and the `ext-dom` extension (usually bundled). No other
 runtime dependencies.
 
 ## Usage
@@ -34,6 +34,20 @@ otherwise it holds the BoQ label/currency/totals plus the top-level
 category/item tree, and `allItems()` lazily yields every `Item` depth-first
 with its full position number (`rNo`, e.g. `01.02.0030`) resolved. An item's
 `descriptionXml` holds the raw XML (the serialized `Description` element).
+
+## Custom drivers / instance API
+
+`GaebParser::fromFile()`/`::fromString()` are shortcuts for `new GaebParser`.
+Use the instance API directly to inject your own driver(s):
+
+```php
+$parser = new GaebParser([new MyDriver, new GaebXmlDriver]);
+$gaeb = $parser->parse($content);   // or ->parseFile($path)
+```
+
+Drivers are tried in order; the first one whose `supports(string $content): bool`
+returns `true` handles the parse. Implement `Bambamboole\GaebParser\Driver\Driver`
+to add support for another format without touching this library.
 
 ## Out of scope
 

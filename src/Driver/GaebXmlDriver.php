@@ -14,14 +14,18 @@ final class GaebXmlDriver implements Driver
 {
     public function supports(string $content): bool
     {
+        if (str_starts_with($content, "\xFF\xFE") || str_starts_with($content, "\xFE\xFF")) {
+            return true;
+        }
+
         return str_starts_with(ltrim($content, "\xEF\xBB\xBF \t\r\n"), '<');
     }
 
-    public function parse(string $xml): GaebFile
+    public function parse(string $content): GaebFile
     {
         $doc = new \DOMDocument;
         $previous = libxml_use_internal_errors(true);
-        $loaded = $doc->loadXML($xml);
+        $loaded = $doc->loadXML($content);
         libxml_clear_errors();
         libxml_use_internal_errors($previous);
 

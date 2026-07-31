@@ -48,7 +48,7 @@ final class GaebParser
 
     private function unrecognized(string $content): GaebParseException
     {
-        $head = ltrim(substr($content, 0, 200));
+        $head = ltrim(substr($content, 0, 200), "\xEF\xBB\xBF \t\r\n");
         if (str_contains($head, '#begin[')) {
             return new GaebParseException('GAEB 2000 format detected — only GAEB DA XML is currently supported');
         }

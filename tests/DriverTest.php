@@ -48,6 +48,12 @@ it('rejects gaeb 90 content with a clear error', function () {
     (new GaebParser)->parse("00K\n01Projekt XY\n");
 })->throws(GaebParseException::class, 'GAEB 90');
 
+it('parses UTF-16 BOM content', function () {
+    $utf16 = "\xFF\xFE".mb_convert_encoding('<?xml version="1.0" encoding="UTF-16"?><GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA83/3.3"><Award><DP>83</DP></Award></GAEB>', 'UTF-16LE', 'UTF-8');
+
+    expect((new GaebParser)->parse($utf16)->info->phase)->toBe(83);
+});
+
 it('rejects unrecognized content', function () {
     (new GaebParser)->parse('certainly not gaeb');
 })->throws(GaebParseException::class, 'Unrecognized file format');
