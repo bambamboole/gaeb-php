@@ -368,6 +368,82 @@ it('throws when the Bid date is not in YYYY-MM-DD format', function () {
     ), date: '02/01/2020');
 })->throws(GaebWriteException::class, 'Invalid date (expected YYYY-MM-DD): 02/01/2020');
 
+it('computes money exactly from decimal string inputs', function () {
+    $source = <<<'XML'
+    <?xml version="1.0" encoding="UTF-8"?>
+    <GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA83/3.3">
+      <GAEBInfo><Version>3.3</Version><VersDate>2021-05</VersDate><Date>2024-01-15</Date></GAEBInfo>
+      <PrjInfo><NamePrj>PRJ-EXACT</NamePrj><Cur>EUR</Cur></PrjInfo>
+      <Award>
+        <DP>83</DP>
+        <AwardInfo><Cur>EUR</Cur></AwardInfo>
+        <BoQ ID="B1">
+          <BoQInfo>
+            <Name>LV-EXACT</Name>
+            <BoQBkdn><Type>Item</Type><Length>4</Length><Num>Yes</Num></BoQBkdn>
+          </BoQInfo>
+          <BoQBody>
+            <Itemlist>
+              <Item ID="I1" RNoPart="0010">
+                <Qty>1000.000</Qty>
+                <QU>m</QU>
+              </Item>
+            </Itemlist>
+          </BoQBody>
+        </BoQ>
+      </Award>
+    </GAEB>
+    XML;
+    $doc = GaebDocument::fromString($source);
+    $bid = makeBid();
+    $bid->setUnitPrice('0010', '0.145');
+
+    $xml = $doc->createBid($bid)->toString();
+
+    expect($xml)->toContain('<UP>0.145</UP>')
+        ->and($xml)->toContain('<IT>145.00</IT>');
+});
+
+it('rounds decimal-string prices half-up to three decimals', function () {
+    $source = <<<'XML'
+    <?xml version="1.0" encoding="UTF-8"?>
+    <GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA83/3.3">
+      <GAEBInfo><Version>3.3</Version><VersDate>2021-05</VersDate><Date>2024-01-15</Date></GAEBInfo>
+      <PrjInfo><NamePrj>PRJ-EXACT</NamePrj><Cur>EUR</Cur></PrjInfo>
+      <Award>
+        <DP>83</DP>
+        <AwardInfo><Cur>EUR</Cur></AwardInfo>
+        <BoQ ID="B1">
+          <BoQInfo>
+            <Name>LV-EXACT</Name>
+            <BoQBkdn><Type>Item</Type><Length>4</Length><Num>Yes</Num></BoQBkdn>
+          </BoQInfo>
+          <BoQBody>
+            <Itemlist>
+              <Item ID="I1" RNoPart="0010">
+                <Qty>100.000</Qty>
+                <QU>m</QU>
+              </Item>
+            </Itemlist>
+          </BoQBody>
+        </BoQ>
+      </Award>
+    </GAEB>
+    XML;
+    $doc = GaebDocument::fromString($source);
+    $bid = makeBid();
+    $bid->setUnitPrice('0010', '12.3456');
+
+    $xml = $doc->createBid($bid)->toString();
+
+    expect($xml)->toContain('<UP>12.346</UP>')
+        ->and($xml)->toContain('<IT>1234.60</IT>');
+});
+
+it('rejects non-numeric price strings', function () {
+    makeBid()->setUnitPrice('0010', 'abc');
+})->throws(GaebWriteException::class);
+
 it('throws when the Bid date is calendar-invalid', function () {
     new Bid(new Contractor(
         name: 'Muster Bau GmbH',

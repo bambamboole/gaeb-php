@@ -9,6 +9,8 @@ use Bambamboole\GaebParser\Dto\Provisional;
 use Bambamboole\GaebParser\Dto\TextComplementKind;
 use Bambamboole\GaebParser\GaebWriteException;
 use Bambamboole\GaebParser\Xml\Dom;
+use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 use Dom\Element;
 use Dom\Text;
 use Dom\XMLDocument;
@@ -220,7 +222,7 @@ final class BidWriter
         $srcBody = Dom::child($srcBoQ, 'BoQBody');
         [$bodyEl, $total] = $srcBody !== null
             ? $this->buildBoQBody($out, $srcBody, '', $bid, $itemsByRNo)
-            : [null, 0.0];
+            : [null, BigDecimal::zero()];
         if ($bodyEl === null) {
             // tgBoQ requires BoQBody — every item ended up notApplicable
             // (or the source had none to begin with). Emitting an X84
@@ -237,7 +239,7 @@ final class BidWriter
             $boqInfo->appendChild($this->reNamespace($out, $bkdn));
         }
         $totalsEl = $out->createElementNS(self::NS, 'Totals');
-        $totalsEl->appendChild($this->elem($out, 'Total', number_format($total, 2, '.', '')));
+        $totalsEl->appendChild($this->elem($out, 'Total', (string) $total));
         $boqInfo->appendChild($totalsEl);
         $boq->appendChild($boqInfo);
         $boq->appendChild($bodyEl);
@@ -247,12 +249,12 @@ final class BidWriter
 
     /**
      * @param  array<string, Item>  $itemsByRNo
-     * @return array{?Element, float}
+     * @return array{?Element, BigDecimal}
      */
     private function buildBoQBody(XMLDocument $out, Element $srcBody, string $prefix, Bid $bid, array $itemsByRNo): array
     {
         $bodyEl = null;
-        $total = 0.0;
+        $total = BigDecimal::zero()->toScale(2);
 
         foreach ($srcBody->childNodes as $node) {
             if (! $node instanceof Element) {
@@ -266,7 +268,7 @@ final class BidWriter
                 [$ctgyEl, $ctgyTotal] = $built;
                 $bodyEl ??= $out->createElementNS(self::NS, 'BoQBody');
                 $bodyEl->appendChild($ctgyEl);
-                $total += $ctgyTotal;
+                $total = $total->plus($ctgyTotal);
             } elseif ($node->localName === 'Itemlist') {
                 [$itemEls, $listTotal] = $this->buildItemlist($out, $node, $prefix, $bid, $itemsByRNo);
                 if ($itemEls === []) {
@@ -278,7 +280,7 @@ final class BidWriter
                     $listEl->appendChild($itemEl);
                 }
                 $bodyEl->appendChild($listEl);
-                $total += $listTotal;
+                $total = $total->plus($listTotal);
             }
         }
 
@@ -287,7 +289,7 @@ final class BidWriter
 
     /**
      * @param  array<string, Item>  $itemsByRNo
-     * @return ?array{Element, float}
+     * @return ?array{Element, BigDecimal}
      */
     private function buildBoQCtgy(XMLDocument $out, Element $srcCtgy, string $prefix, Bid $bid, array $itemsByRNo): ?array
     {
@@ -297,7 +299,7 @@ final class BidWriter
         $srcInnerBody = Dom::child($srcCtgy, 'BoQBody');
         [$bodyEl, $total] = $srcInnerBody !== null
             ? $this->buildBoQBody($out, $srcInnerBody, $childPrefix, $bid, $itemsByRNo)
-            : [null, 0.0];
+            : [null, BigDecimal::zero()->toScale(2)];
 
         if ($bodyEl === null) {
             // Every item under this category was notApplicable (or there
@@ -313,7 +315,7 @@ final class BidWriter
         $ctgy->appendChild($bodyEl);
 
         $totalsEl = $out->createElementNS(self::NS, 'Totals');
-        $totalsEl->appendChild($this->elem($out, 'Total', number_format($total, 2, '.', '')));
+        $totalsEl->appendChild($this->elem($out, 'Total', (string) $total));
         $ctgy->appendChild($totalsEl);
 
         return [$ctgy, $total];
@@ -321,12 +323,12 @@ final class BidWriter
 
     /**
      * @param  array<string, Item>  $itemsByRNo
-     * @return array{list<Element>, float}
+     * @return array{list<Element>, BigDecimal}
      */
     private function buildItemlist(XMLDocument $out, Element $srcList, string $prefix, Bid $bid, array $itemsByRNo): array
     {
         $elements = [];
-        $total = 0.0;
+        $total = BigDecimal::zero()->toScale(2);
 
         foreach (Dom::children($srcList, 'Item') as $srcItem) {
             $rNoPart = Dom::attr($srcItem, 'RNoPart');
@@ -341,8 +343,18 @@ final class BidWriter
 
             // Round to the emitted precision first so UP x Qty == IT holds
             // in the document a consumer actually reads back.
-            $up = round($bid->prices()[$rNo], 3);
-            $it = $item->qty !== null ? round($item->qty * $up, 2) : round($up, 2);
+            $up = $bid->prices()[$rNo]->toScale(3, RoundingMode::HalfUp);
+            $qty = null;
+            if ($item->qty !== null) {
+                // Read qty from the SOURCE decimal string — no float hop.
+                // A priced item always carries a Qty in the source; the
+                // read-model float is an unreachable fallback.
+                $qtyString = Dom::text($srcItem, 'Qty');
+                $qty = BigDecimal::of($qtyString ?? (string) $item->qty);
+            }
+            $it = $qty !== null
+                ? $qty->multipliedBy($up)->toScale(2, RoundingMode::HalfUp)
+                : $up->toScale(2, RoundingMode::HalfUp);
 
             $itemEl = $out->createElementNS(self::NS, 'Item');
             $itemEl->setAttribute('ID', Dom::attr($srcItem, 'ID'));
@@ -350,11 +362,11 @@ final class BidWriter
             if ($rNoIndex !== '') {
                 $itemEl->setAttribute('RNoIndex', $rNoIndex);
             }
-            if ($item->qty !== null) {
-                $itemEl->appendChild($this->elem($out, 'Qty', number_format($item->qty, 3, '.', '')));
+            if ($qty !== null) {
+                $itemEl->appendChild($this->elem($out, 'Qty', (string) $qty->toScale(3, RoundingMode::HalfUp)));
             }
-            $itemEl->appendChild($this->elem($out, 'UP', number_format($up, 3, '.', '')));
-            $itemEl->appendChild($this->elem($out, 'IT', number_format($it, 2, '.', '')));
+            $itemEl->appendChild($this->elem($out, 'UP', (string) $up));
+            $itemEl->appendChild($this->elem($out, 'IT', (string) $it));
 
             $gapFills = $bid->gapFills()[$rNo] ?? [];
             if ($gapFills !== []) {
@@ -368,7 +380,7 @@ final class BidWriter
 
             $elements[] = $itemEl;
             if ($this->includedInTotal($item)) {
-                $total += $it;
+                $total = $total->plus($it);
             }
         }
 

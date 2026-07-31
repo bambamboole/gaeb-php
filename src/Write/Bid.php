@@ -4,10 +4,14 @@ namespace Bambamboole\GaebParser\Write;
 
 use Bambamboole\GaebParser\Assert;
 use Bambamboole\GaebParser\Dto\Contractor;
+use Bambamboole\GaebParser\GaebWriteException;
+use Brick\Math\BigDecimal;
+use Brick\Math\BigNumber;
+use Brick\Math\Exception\MathException;
 
 final class Bid
 {
-    /** @var array<string, float> */
+    /** @var array<string, BigDecimal> */
     private array $prices = [];
 
     /** @var array<string, array<int, string>> rNo => markLabel => text */
@@ -26,9 +30,17 @@ final class Bid
         }
     }
 
-    public function setUnitPrice(string $rNo, float $unitPrice): self
+    public function setUnitPrice(string $rNo, BigNumber|string|float|int $unitPrice): self
     {
-        $this->prices[$rNo] = $unitPrice;
+        // brick/math's BigDecimal::of() doesn't accept float directly (by
+        // design — floats are lossy); string/int/BigNumber are the exact
+        // path, float is a convenience cast through PHP's own (string)
+        // rendering (14 significant digits, round-trippable).
+        try {
+            $this->prices[$rNo] = BigDecimal::of(is_float($unitPrice) ? (string) $unitPrice : $unitPrice);
+        } catch (MathException $e) {
+            throw new GaebWriteException("Invalid unit price for {$rNo}: {$e->getMessage()}", previous: $e);
+        }
 
         return $this;
     }
@@ -47,7 +59,7 @@ final class Bid
         return $this;
     }
 
-    /** @internal @return array<string, float> */
+    /** @internal @return array<string, BigDecimal> */
     public function prices(): array
     {
         return $this->prices;
