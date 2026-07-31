@@ -99,11 +99,11 @@ transform:
 ```php
 use Bambamboole\Gaeb\GaebDocument;
 use Bambamboole\Gaeb\Write\Bid;
-use Bambamboole\Gaeb\Dto\Contractor;
+use Bambamboole\Gaeb\Dto\Party;
 
 $tender = GaebDocument::open('tender.x83');
 
-$contractor = new Contractor(
+$contractor = new Party(
     name: 'ACME Bau GmbH',
     street: 'Musterstraße 1',
     zip: '12345',

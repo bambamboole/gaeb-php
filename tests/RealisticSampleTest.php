@@ -10,7 +10,7 @@ it('parses the self-authored realistic sample fixture', function () {
         ->and($gaeb->project->currency)->toBe('EUR')
         ->and($gaeb->boq->label)->toBe('LV Lagerhalle Nord')
         ->and($gaeb->boq->currency)->toBe('EUR')
-        ->and($gaeb->boq->total)->toBe(9649.00)
+        ->and($gaeb->boq->totals->total)->toBe(9649.00)
         ->and($gaeb->info->program)->toBe('Fable Sample Suite 1.0');
 
     $items = iterator_to_array($gaeb->boq->allItems(), false);

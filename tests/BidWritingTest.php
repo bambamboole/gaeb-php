@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-use Bambamboole\Gaeb\Dto\Contractor;
+use Bambamboole\Gaeb\Dto\Party;
 use Bambamboole\Gaeb\GaebDocument;
 use Bambamboole\Gaeb\GaebParser;
 use Bambamboole\Gaeb\GaebWriteException;
@@ -8,7 +8,7 @@ use Bambamboole\Gaeb\Write\Bid;
 
 function makeBid(): Bid
 {
-    return new Bid(new Contractor(
+    return new Bid(new Party(
         name: 'Muster Bau GmbH',
         street: 'Handwerkerweg 1',
         zip: '53179',
@@ -147,7 +147,7 @@ it('excludes notApplicable items from the bid and its totals', function () {
 
 it('writes an explicitly supplied bid date instead of today', function () {
     $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
-    $bid = new Bid(new Contractor(
+    $bid = new Bid(new Party(
         name: 'Muster Bau GmbH',
         street: 'Handwerkerweg 1',
         zip: '53179',
@@ -347,7 +347,7 @@ it('succeeds without a source currency when Bid::$currency is set', function () 
     </GAEB>
     XML;
     $doc = GaebDocument::fromString($source);
-    $bid = new Bid(new Contractor(
+    $bid = new Bid(new Party(
         name: 'Muster Bau GmbH',
         street: 'Handwerkerweg 1',
         zip: '53179',
@@ -370,7 +370,7 @@ it('throws when the source phase is not X81-X83', function () {
 })->throws(GaebWriteException::class, 'createBid requires an X81–X83 source, got X84');
 
 it('throws when the Bid date is not in YYYY-MM-DD format', function () {
-    new Bid(new Contractor(
+    new Bid(new Party(
         name: 'Muster Bau GmbH',
         street: 'Handwerkerweg 1',
         zip: '53179',
@@ -492,7 +492,7 @@ it('wraps a non-numeric source Qty in a GaebWriteException instead of crashing',
 })->throws(GaebWriteException::class, '0010');
 
 it('throws when the Bid date is calendar-invalid', function () {
-    new Bid(new Contractor(
+    new Bid(new Party(
         name: 'Muster Bau GmbH',
         street: 'Handwerkerweg 1',
         zip: '53179',

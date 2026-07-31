@@ -17,7 +17,7 @@ exists so they can be added later.
 - **Strict write contract:** `GaebWriteException` is thrown for missing
   unit prices on priceable items, unknown `rNo`s referenced in a `Bid`, a
   bid that would end up with zero items, or missing required
-  `Contractor`/source fields — writing never silently drops, defaults, or
+  contractor/source fields — writing never silently drops, defaults, or
   guesses data. The read path stays unchanged and lenient; this is a
   write-only addition.
 - **DTOs** (`src/Dto/`) are `final readonly` with public promoted
@@ -57,8 +57,12 @@ exists so they can be added later.
   (89 → `2021-05_Rechnung`, everything else → `2021-05_Leistungsverzeichnis`).
 - `src/Write/Bid.php` is the mutable bid builder (prices/gap
   fills/comments keyed by `rNo`); `src/Write/BidWriter.php` (`@internal`)
-  builds the X84 DOM from the source DOM plus the parsed `GaebFile`;
-  `src/Dto/Contractor.php` is the `CTR`/`Address` DTO. Write path is
+  builds the X84 DOM from the source DOM plus the parsed `GaebFile`; the
+  bid's contractor is a `Party` (`src/Dto/Party.php`, the one DTO for the
+  spec's single `tgAddress` type). Both writers extend
+  `src/Write/Writer.php` (`@internal`), which holds the shared emission
+  helpers (`elem`, `reNamespace`, `buildGaebInfo`, `buildPrjInfo`, the
+  `BoQBody` walker) parameterized by the phase namespace. Write path is
   strict via `GaebWriteException`; read path is unchanged and lenient.
 - `src/Write/Invoice.php` is the analogous mutable invoice builder
   (cumulative billed quantities keyed by `rNo`, prior payments);

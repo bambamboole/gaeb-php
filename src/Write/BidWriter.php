@@ -2,9 +2,9 @@
 
 namespace Bambamboole\Gaeb\Write;
 
-use Bambamboole\Gaeb\Dto\Contractor;
 use Bambamboole\Gaeb\Dto\GaebFile;
 use Bambamboole\Gaeb\Dto\Item;
+use Bambamboole\Gaeb\Dto\Party;
 use Bambamboole\Gaeb\Dto\Provisional;
 use Bambamboole\Gaeb\Dto\TextComplementKind;
 use Bambamboole\Gaeb\GaebWriteException;
@@ -13,31 +13,34 @@ use Brick\Math\BigDecimal;
 use Brick\Math\Exception\MathException;
 use Brick\Math\RoundingMode;
 use Dom\Element;
-use Dom\Text;
 use Dom\XMLDocument;
 
 /**
  * @internal builds the X84 bid DOM from a source X81/X83 DOM plus its parsed
  * read model and a Bid collector. Kept out of GaebDocument to keep that
- * class thin; see docs/superpowers/specs/2026-07-31-write-foundation-x84-bid-design.md
- * for the emission rules this implements.
+ * class thin.
  */
-final class BidWriter
+final class BidWriter extends Writer
 {
-    private const NS = 'http://www.gaeb.de/GAEB_DA_XML/DA84/3.3';
+    protected const string NS = 'http://www.gaeb.de/GAEB_DA_XML/DA84/3.3';
+
+    private Bid $bid;
+
+    /** @var array<string, Item> */
+    private array $itemsByRNo;
 
     public function write(XMLDocument $source, GaebFile $file, Bid $bid): XMLDocument
     {
-        /** @var array<string, Item> $itemsByRNo */
-        $itemsByRNo = [];
+        $this->bid = $bid;
+        $this->itemsByRNo = [];
         foreach ($file->boq?->allItems() ?? [] as $item) {
-            $itemsByRNo[$item->rNo] = $item;
+            $this->itemsByRNo[$item->rNo] = $item;
         }
 
-        $this->assertPricesComplete($itemsByRNo, $bid);
-        $this->assertKnownRNos($itemsByRNo, $bid);
-        $this->assertNoNotApplicableReferences($itemsByRNo, $bid);
-        $this->assertGapFillsMatchComplements($itemsByRNo, $bid);
+        $this->assertPricesComplete();
+        $this->assertKnownRNos();
+        $this->assertNoNotApplicableReferences();
+        $this->assertGapFillsMatchComplements();
 
         $out = XMLDocument::createEmpty();
         $out->formatOutput = true;
@@ -45,19 +48,18 @@ final class BidWriter
         $root = $out->createElementNS(self::NS, 'GAEB');
         $out->appendChild($root);
 
-        $root->appendChild($this->buildGaebInfo($out, $bid));
+        $root->appendChild($this->buildGaebInfo($out, $bid->date, $bid->progSystem));
         $root->appendChild($this->buildPrjInfo($out, $file));
-        $root->appendChild($this->buildAward($out, $source, $file, $bid, $itemsByRNo));
+        $root->appendChild($this->buildAward($out, $source, $file));
 
         return $out;
     }
 
-    /** @param array<string, Item> $itemsByRNo */
-    private function assertPricesComplete(array $itemsByRNo, Bid $bid): void
+    private function assertPricesComplete(): void
     {
         $missing = [];
-        foreach ($itemsByRNo as $rNo => $item) {
-            if (! $item->notApplicable && ! array_key_exists($rNo, $bid->prices())) {
+        foreach ($this->itemsByRNo as $rNo => $item) {
+            if (! $item->notApplicable && ! array_key_exists($rNo, $this->bid->prices())) {
                 $missing[] = $rNo;
             }
         }
@@ -66,31 +68,29 @@ final class BidWriter
         }
     }
 
-    /** @param array<string, Item> $itemsByRNo */
-    private function assertKnownRNos(array $itemsByRNo, Bid $bid): void
+    /** @return list<string> */
+    private function referencedRNos(): array
     {
-        $referenced = [
-            ...array_keys($bid->prices()),
-            ...array_keys($bid->gapFills()),
-            ...array_keys($bid->comments()),
+        return [
+            ...array_keys($this->bid->prices()),
+            ...array_keys($this->bid->gapFills()),
+            ...array_keys($this->bid->comments()),
         ];
-        $unknown = array_values(array_unique(array_diff($referenced, array_keys($itemsByRNo))));
+    }
+
+    private function assertKnownRNos(): void
+    {
+        $unknown = array_values(array_unique(array_diff($this->referencedRNos(), array_keys($this->itemsByRNo))));
         if ($unknown !== []) {
             throw new GaebWriteException('Unknown rNo(s) referenced in bid: '.implode(', ', $unknown));
         }
     }
 
-    /** @param array<string, Item> $itemsByRNo */
-    private function assertNoNotApplicableReferences(array $itemsByRNo, Bid $bid): void
+    private function assertNoNotApplicableReferences(): void
     {
-        $referenced = [
-            ...array_keys($bid->prices()),
-            ...array_keys($bid->gapFills()),
-            ...array_keys($bid->comments()),
-        ];
         $notApplicable = [];
-        foreach (array_unique($referenced) as $rNo) {
-            if ($itemsByRNo[$rNo]->notApplicable ?? false) {
+        foreach (array_unique($this->referencedRNos()) as $rNo) {
+            if ($this->itemsByRNo[$rNo]->notApplicable ?? false) {
                 $notApplicable[] = $rNo;
             }
         }
@@ -99,12 +99,11 @@ final class BidWriter
         }
     }
 
-    /** @param array<string, Item> $itemsByRNo */
-    private function assertGapFillsMatchComplements(array $itemsByRNo, Bid $bid): void
+    private function assertGapFillsMatchComplements(): void
     {
         $invalid = [];
-        foreach ($bid->gapFills() as $rNo => $markLabels) {
-            $item = $itemsByRNo[$rNo] ?? null;
+        foreach ($this->bid->gapFills() as $rNo => $markLabels) {
+            $item = $this->itemsByRNo[$rNo] ?? null;
             if ($item === null) {
                 continue; // already reported by assertKnownRNos
             }
@@ -125,40 +124,12 @@ final class BidWriter
         }
     }
 
-    private function buildGaebInfo(XMLDocument $out, Bid $bid): Element
-    {
-        $info = $out->createElementNS(self::NS, 'GAEBInfo');
-        $info->appendChild($this->elem($out, 'Version', '3.3'));
-        $info->appendChild($this->elem($out, 'VersDate', '2021-05'));
-        $info->appendChild($this->elem($out, 'Date', $bid->date ?? date('Y-m-d')));
-        $info->appendChild($this->elem($out, 'ProgSystem', $bid->progSystem));
-
-        return $info;
-    }
-
-    private function buildPrjInfo(XMLDocument $out, GaebFile $file): Element
-    {
-        $name = $file->project->name;
-        if ($name === null) {
-            throw new GaebWriteException('Source project has no name; cannot write PrjInfo/NamePrj.');
-        }
-
-        $prj = $out->createElementNS(self::NS, 'PrjInfo');
-        $prj->appendChild($this->elem($out, 'NamePrj', $name));
-        if ($file->project->label !== null) {
-            $prj->appendChild($this->elem($out, 'LblPrj', $file->project->label));
-        }
-
-        return $prj;
-    }
-
-    /** @param array<string, Item> $itemsByRNo */
-    private function buildAward(XMLDocument $out, XMLDocument $source, GaebFile $file, Bid $bid, array $itemsByRNo): Element
+    private function buildAward(XMLDocument $out, XMLDocument $source, GaebFile $file): Element
     {
         $award = $out->createElementNS(self::NS, 'Award');
         $award->appendChild($this->elem($out, 'DP', '84'));
 
-        $currency = $bid->currency ?? $file->project->currency ?? $file->boq?->currency;
+        $currency = $this->bid->currency ?? $file->project->currency ?? $file->boq?->currency;
         if ($currency === null) {
             throw new GaebWriteException('no currency found in source — set Bid::$currency');
         }
@@ -166,23 +137,20 @@ final class BidWriter
         $awardInfo->appendChild($this->elem($out, 'Cur', $currency));
         $award->appendChild($awardInfo);
 
-        $award->appendChild($this->buildCTR($out, $bid->contractor));
-        $award->appendChild($this->buildBoQ($out, $source, $file, $bid, $itemsByRNo));
+        $award->appendChild($this->buildCTR($out, $this->bid->contractor));
+        $award->appendChild($this->buildBoQ($out, $source));
 
         return $award;
     }
 
-    private function buildCTR(XMLDocument $out, Contractor $contractor): Element
+    private function buildCTR(XMLDocument $out, Party $contractor): Element
     {
-        $missing = [];
-        foreach (['name' => $contractor->name, 'street' => $contractor->street, 'zip' => $contractor->zip, 'city' => $contractor->city] as $field => $value) {
-            if ($value === null) {
-                $missing[] = $field;
-            }
-        }
-        if ($missing !== []) {
-            throw new GaebWriteException('Contractor is missing required field(s): '.implode(', ', $missing));
-        }
+        $this->assertRequired([
+            'name' => $contractor->name,
+            'street' => $contractor->street,
+            'zip' => $contractor->zip,
+            'city' => $contractor->city,
+        ], 'Contractor is missing required field(s): ');
 
         $ctr = $out->createElementNS(self::NS, 'CTR');
         $address = $out->createElementNS(self::NS, 'Address');
@@ -201,8 +169,7 @@ final class BidWriter
         return $ctr;
     }
 
-    /** @param array<string, Item> $itemsByRNo */
-    private function buildBoQ(XMLDocument $out, XMLDocument $source, GaebFile $file, Bid $bid, array $itemsByRNo): Element
+    private function buildBoQ(XMLDocument $out, XMLDocument $source): Element
     {
         $srcRoot = $source->documentElement;
         $srcAward = $srcRoot !== null ? Dom::child($srcRoot, 'Award') : null;
@@ -222,7 +189,7 @@ final class BidWriter
 
         $srcBody = Dom::child($srcBoQ, 'BoQBody');
         [$bodyEl, $total] = $srcBody !== null
-            ? $this->buildBoQBody($out, $srcBody, '', $bid, $itemsByRNo)
+            ? $this->buildBoQBody($out, $srcBody, '')
             : [null, BigDecimal::zero()];
         if ($bodyEl === null) {
             // tgBoQ requires BoQBody — every item ended up notApplicable
@@ -239,67 +206,22 @@ final class BidWriter
         foreach (Dom::children($srcBoQInfo, 'BoQBkdn') as $bkdn) {
             $boqInfo->appendChild($this->reNamespace($out, $bkdn));
         }
-        $totalsEl = $out->createElementNS(self::NS, 'Totals');
-        $totalsEl->appendChild($this->elem($out, 'Total', (string) $total));
-        $boqInfo->appendChild($totalsEl);
+        $boqInfo->appendChild($this->totals($out, $total));
         $boq->appendChild($boqInfo);
         $boq->appendChild($bodyEl);
 
         return $boq;
     }
 
-    /**
-     * @param  array<string, Item>  $itemsByRNo
-     * @return array{?Element, BigDecimal}
-     */
-    private function buildBoQBody(XMLDocument $out, Element $srcBody, string $prefix, Bid $bid, array $itemsByRNo): array
-    {
-        $bodyEl = null;
-        $total = BigDecimal::zero()->toScale(2);
-
-        foreach ($srcBody->childNodes as $node) {
-            if (! $node instanceof Element) {
-                continue;
-            }
-            if ($node->localName === 'BoQCtgy') {
-                $built = $this->buildBoQCtgy($out, $node, $prefix, $bid, $itemsByRNo);
-                if ($built === null) {
-                    continue;
-                }
-                [$ctgyEl, $ctgyTotal] = $built;
-                $bodyEl ??= $out->createElementNS(self::NS, 'BoQBody');
-                $bodyEl->appendChild($ctgyEl);
-                $total = $total->plus($ctgyTotal);
-            } elseif ($node->localName === 'Itemlist') {
-                [$itemEls, $listTotal] = $this->buildItemlist($out, $node, $prefix, $bid, $itemsByRNo);
-                if ($itemEls === []) {
-                    continue;
-                }
-                $bodyEl ??= $out->createElementNS(self::NS, 'BoQBody');
-                $listEl = $out->createElementNS(self::NS, 'Itemlist');
-                foreach ($itemEls as $itemEl) {
-                    $listEl->appendChild($itemEl);
-                }
-                $bodyEl->appendChild($listEl);
-                $total = $total->plus($listTotal);
-            }
-        }
-
-        return [$bodyEl, $total];
-    }
-
-    /**
-     * @param  array<string, Item>  $itemsByRNo
-     * @return ?array{Element, BigDecimal}
-     */
-    private function buildBoQCtgy(XMLDocument $out, Element $srcCtgy, string $prefix, Bid $bid, array $itemsByRNo): ?array
+    /** @return ?array{Element, BigDecimal} */
+    protected function buildBoQCtgy(XMLDocument $out, Element $srcCtgy, string $prefix): ?array
     {
         $rNoPart = Dom::attr($srcCtgy, 'RNoPart');
         $childPrefix = $prefix === '' ? $rNoPart : "{$prefix}.{$rNoPart}";
 
         $srcInnerBody = Dom::child($srcCtgy, 'BoQBody');
         [$bodyEl, $total] = $srcInnerBody !== null
-            ? $this->buildBoQBody($out, $srcInnerBody, $childPrefix, $bid, $itemsByRNo)
+            ? $this->buildBoQBody($out, $srcInnerBody, $childPrefix)
             : [null, BigDecimal::zero()->toScale(2)];
 
         if ($bodyEl === null) {
@@ -314,19 +236,13 @@ final class BidWriter
         $ctgy->setAttribute('ID', Dom::attr($srcCtgy, 'ID'));
         $ctgy->setAttribute('RNoPart', $rNoPart);
         $ctgy->appendChild($bodyEl);
-
-        $totalsEl = $out->createElementNS(self::NS, 'Totals');
-        $totalsEl->appendChild($this->elem($out, 'Total', (string) $total));
-        $ctgy->appendChild($totalsEl);
+        $ctgy->appendChild($this->totals($out, $total));
 
         return [$ctgy, $total];
     }
 
-    /**
-     * @param  array<string, Item>  $itemsByRNo
-     * @return array{list<Element>, BigDecimal}
-     */
-    private function buildItemlist(XMLDocument $out, Element $srcList, string $prefix, Bid $bid, array $itemsByRNo): array
+    /** @return array{list<Element>, BigDecimal} */
+    protected function buildItemlist(XMLDocument $out, Element $srcList, string $prefix): array
     {
         $elements = [];
         $total = BigDecimal::zero()->toScale(2);
@@ -337,14 +253,14 @@ final class BidWriter
             $segment = $rNoIndex !== '' ? "{$rNoPart}.{$rNoIndex}" : $rNoPart;
             $rNo = $prefix === '' ? $segment : "{$prefix}.{$segment}";
 
-            $item = $itemsByRNo[$rNo] ?? null;
+            $item = $this->itemsByRNo[$rNo] ?? null;
             if ($item === null || $item->notApplicable) {
                 continue;
             }
 
             // Round to the emitted precision first so UP x Qty == IT holds
             // in the document a consumer actually reads back.
-            $up = $bid->prices()[$rNo]->toScale(3, RoundingMode::HalfUp);
+            $up = $this->bid->prices()[$rNo]->toScale(3, RoundingMode::HalfUp);
             $qty = null;
             if ($item->qty !== null) {
                 // Read qty from the SOURCE decimal string — no float hop.
@@ -373,12 +289,12 @@ final class BidWriter
             $itemEl->appendChild($this->elem($out, 'UP', (string) $up));
             $itemEl->appendChild($this->elem($out, 'IT', (string) $it));
 
-            $gapFills = $bid->gapFills()[$rNo] ?? [];
+            $gapFills = $this->bid->gapFills()[$rNo] ?? [];
             if ($gapFills !== []) {
                 $itemEl->appendChild($this->buildDescription($out, $gapFills));
             }
 
-            $comment = $bid->comments()[$rNo] ?? null;
+            $comment = $this->bid->comments()[$rNo] ?? null;
             if ($comment !== null) {
                 $itemEl->appendChild($this->buildBidComm($out, $comment));
             }
@@ -439,34 +355,5 @@ final class BidWriter
         $p->appendChild($this->elem($out, 'span', $text));
 
         return $p;
-    }
-
-    /** Creates a DA84-namespaced element, optionally with text content — createElementNS has no 3-arg text shorthand in the native Dom API. */
-    private function elem(XMLDocument $out, string $name, ?string $text = null): Element
-    {
-        $el = $out->createElementNS(self::NS, $name);
-        if ($text !== null) {
-            $el->textContent = $text;
-        }
-
-        return $el;
-    }
-
-    /** Clones $el into the target document under the DA84 namespace, preserving structure and text. */
-    private function reNamespace(XMLDocument $out, Element $el): Element
-    {
-        $new = $out->createElementNS(self::NS, $el->localName);
-        foreach ($el->attributes ?? [] as $attr) {
-            $new->setAttribute($attr->name, $attr->value);
-        }
-        foreach ($el->childNodes as $child) {
-            if ($child instanceof Element) {
-                $new->appendChild($this->reNamespace($out, $child));
-            } elseif ($child instanceof Text) {
-                $new->appendChild($out->createTextNode($child->wholeText));
-            }
-        }
-
-        return $new;
     }
 }

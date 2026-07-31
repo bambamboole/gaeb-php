@@ -123,7 +123,7 @@ it('parses the invoice.x89 fixture end to end', function () {
         ->and($gaeb->invoice->creator->taxNo)->toBe('DE123456789')
         ->and($gaeb->invoice->payments)->toHaveCount(1)
         ->and($gaeb->invoice->totalGross)->toBe(3052.35)
-        ->and($gaeb->boq->total)->toBe(2565.00)
+        ->and($gaeb->boq->totals->total)->toBe(2565.00)
         ->and($gaeb->boq->totals->totalGross)->toBe(3052.35);
 
     $items = iterator_to_array($gaeb->boq->allItems(), false);
