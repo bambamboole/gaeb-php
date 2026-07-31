@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 
 use Bambamboole\Gaeb\Dto\Party;
+use Bambamboole\Gaeb\Dto\Provisional;
 use Bambamboole\Gaeb\GaebDocument;
 use Bambamboole\Gaeb\GaebParser;
 use Bambamboole\Gaeb\GaebWriteException;
@@ -501,3 +502,67 @@ it('throws when the Bid date is calendar-invalid', function () {
         phone: null,
     ), date: '2024-13-45');
 })->throws(GaebWriteException::class, 'Invalid date (expected YYYY-MM-DD): 2024-13-45');
+
+it('writes a not-offered item without UP/IT and excludes it from totals', function () {
+    $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
+    $bid = makeBid();
+    $skipped = null;
+    foreach ($doc->file()->boq->allItems() as $item) {
+        if ($item->notApplicable) {
+            continue;
+        }
+        if ($skipped === null) {
+            $skipped = $item->rNo;
+            $bid->setNotOffered($item->rNo);
+        } else {
+            $bid->setUnitPrice($item->rNo, 10.0);
+        }
+    }
+
+    $x84 = $doc->createBid($bid);
+    $parsed = GaebParser::fromString($x84->toString());
+    $items = [];
+    foreach ($parsed->boq->allItems() as $item) {
+        $items[$item->rNo] = $item;
+    }
+
+    expect($x84->validate())->toBe([])
+        ->and($items[$skipped]->notOffered)->toBeTrue()
+        ->and($items[$skipped]->unitPrice)->toBeNull()
+        ->and($items[$skipped]->totalPrice)->toBeNull();
+
+    // Inclusion rules read the SOURCE flags — the written X84 does not
+    // carry ALNGroupNo/Provis, so the read-back can't provide them.
+    $expectedTotal = 0.0;
+    foreach ($doc->file()->boq->allItems() as $srcItem) {
+        $includedInTotal = $srcItem->provisional !== Provisional::WithoutTotal
+            && ($srcItem->alternativeGroupNo === null || $srcItem->alternativeSerialNo === 1);
+        if (! $srcItem->notApplicable && $includedInTotal) {
+            $expectedTotal += $items[$srcItem->rNo]->totalPrice ?? 0.0;
+        }
+    }
+    expect($parsed->boq->totals->total)->toBe($expectedTotal);
+});
+
+it('throws when a position is both priced and marked not offered', function () {
+    $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
+    $bid = makeBid();
+    priceAll($doc, $bid);
+    foreach ($doc->file()->boq->allItems() as $item) {
+        if (! $item->notApplicable) {
+            $bid->setNotOffered($item->rNo);
+            break;
+        }
+    }
+
+    $doc->createBid($bid);
+})->throws(GaebWriteException::class, 'marked notOffered but also priced');
+
+it('throws when notOffered references an unknown rNo', function () {
+    $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
+    $bid = makeBid();
+    priceAll($doc, $bid);
+    $bid->setNotOffered('99.9999');
+
+    $doc->createBid($bid);
+})->throws(GaebWriteException::class, 'Unknown rNo(s) referenced in bid: 99.9999');

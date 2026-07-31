@@ -7,6 +7,9 @@ final readonly class BoQCategory
     /**
      * @param  list<BoQCategory>  $categories
      * @param  list<Item>  $items
+     * @param  list<MarkupItem>  $markupItems
+     * @param  list<Remark>  $remarks
+     * @param  list<PerformanceDescription>  $performanceDescriptions
      */
     public function __construct(
         public string $rNoPart,
@@ -15,5 +18,10 @@ final readonly class BoQCategory
         public array $items,
         public ?int $changeOrderNo = null,
         public ?ChangeOrderStatus $changeOrderStatus = null,
+        public ?Totals $totals = null,
+        public bool $notApplicable = false,
+        public array $markupItems = [],
+        public array $remarks = [],
+        public array $performanceDescriptions = [],
     ) {}
 }

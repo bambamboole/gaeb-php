@@ -41,6 +41,16 @@ with its full position number (`rNo`, e.g. `01.02.0030`) resolved. An item's
 `descriptionXml` holds the raw XML (the serialized `Description` element,
 self-contained with its own `xmlns="…"` declaration).
 
+The read model covers the money-relevant LV elements beyond plain items:
+markup/surcharge positions (`markupItems` on `BoQ`/`BoQCategory`, with
+type, IDREF references, sub-quantities, and — on the priced side — percent
+and totals), `remarks` and `performanceDescriptions`, category `totals` and
+`notApplicable` (`NotApplBoQ`), unit-price components (`Item->upComponents`
+plus the `BoQ->noUpComponents`/`upComponentLabels` breakdown labels),
+item-level `vat` and `discountPercent`, per-rate `Totals->vatParts`,
+`Totals->netUpComponents`, and the `notOffered`/`qtyToBeDetermined` flags
+(a not-offered position is distinct from a 0.00 unit price).
+
 X84/X86 files also expose the parties and award data:
 
 ```php
@@ -121,10 +131,12 @@ $bid = new Bid($contractor, currency: 'EUR', date: '2026-07-31');
 
 $bid->setUnitPrice('01.02.0010', '12.50')   // decimal strings are exact, floats convenient
     ->fillGap('01.02.0010', 1, 'Musterhersteller GmbH')
-    ->setComment('01.02.0010', 'Lieferzeit 4 Wochen');
-// ...one setUnitPrice() per priceable item (every item that isn't marked
-// notApplicable) — createBid() throws GaebWriteException naming any that's
-// missing a price, or any rNo it doesn't recognize.
+    ->setComment('01.02.0010', 'Lieferzeit 4 Wochen')
+    ->setNotOffered('01.02.0020');          // spec 4.6.4: distinct from UP 0.00
+// ...one setUnitPrice() or setNotOffered() per priceable item (every item
+// that isn't marked notApplicable) — createBid() throws GaebWriteException
+// naming any that's missing a price, any rNo it doesn't recognize, or any
+// position that is both priced and marked not offered.
 
 $award = $tender->createBid($bid);
 
@@ -220,10 +232,9 @@ to add support for another format without touching this library.
   writing, X89B payment approval
 - Multiple `InvoiceShare`s (only a single `basic amount` share is emitted),
   `COInfo`/Nachträge, cash-discount `Terms` when writing invoices
-- `NotOffered` marking, per-item `VAT`, `UPComp1–6` price components,
-  sub-description prices, `TimeQu`, `Product` when writing bids
+- Per-item `VAT`, `UPComp1–6` price components, sub-description prices,
+  `TimeQu`, `Product`, and `MarkupItem` pricing when writing bids
 - Legacy formats (GAEB 90, GAEB 2000)
-- Markup/surcharge items (`MarkupItem`) — skipped silently on read
 
 These may be added later without breaking the public API.
 

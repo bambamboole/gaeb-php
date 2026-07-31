@@ -104,8 +104,23 @@ More wild-file traps:
   produces duplicate position numbers.
 - Items may have NO `Description` element at all — must parse with all
   texts `null`.
-- `MarkupItem` (surcharge items) exist in real files and are silently
-  skipped (documented as out of scope in the README).
+- `MarkupItem` (surcharge items, Zuschlagspositionen) are parsed into
+  `markupItems` on `BoQ`/`BoQCategory` — totals don't reconcile without
+  them. Schema facts (xmllint-verified against `markup.x83` /
+  `components.x84`): `tgRefItem` (used by `RefRNo` and
+  `MarkupSubQty/RefItem`) is an EMPTY element with a required `IDRef`
+  attribute referencing the target Item's `xs:ID` — never text content;
+  that's why `Item`/`MarkupItem` expose `id`. X83's restricted
+  `tgMarkupItem` is unpriced and REQUIRES `MarkupType` + `Description`;
+  X84's keeps only the money (`ITMarkup`, then `Markup`, `DiscountPcnt`,
+  `IT`, optional `Description` — `ITMarkup` comes FIRST) plus the
+  ID/RNoPart attributes, and drops `MarkupType` entirely.
+- `BoQInfo/LblUPComp1–6` (unit-price component labels) carry a REQUIRED
+  `Type` attribute (`Wages|Materials|Plant|Miscellaneous|Unknown`); the
+  parser reads the label text into `BoQ->upComponentLabels` (the `Type`
+  attribute is not modeled). X84's restricted `BoQInfo` drops
+  `NoUPComps`/`LblUPComp` entirely — the labels live in the tender
+  (X81–X83), the values (`Item->upComponents`, `UPComp1–6`) in the bid.
 
 ## Text complements (Bieterlücken)
 
@@ -320,6 +335,11 @@ Emission gotchas:
   from the output entirely and need no price. A missing price on any other
   item throws `GaebWriteException` listing every offending `rNo` — writing
   never emits a silent `UP 0.000`.
+- `Bid::setNotOffered($rNo)` marks a position as not offered (spec 4.6.4:
+  distinct from a 0.00 price). Emission: `NotOffered Yes` as the FIRST
+  item child (X84 order), source `Qty` kept, `UP`/`IT` omitted (the whole
+  UP sequence is optional in X84), excluded from totals. Pricing AND
+  marking the same `rNo` throws.
 - An empty `BoQCtgy` (every item under it `notApplicable`) is dropped
   entirely rather than emitted with a hollow `Totals/Total 0.00`; if the
   whole bid ends up empty this way, `createBid` throws
@@ -340,8 +360,9 @@ The official GAEB 3.3 XSD set is committed UNMODIFIED under
 copyright attribution live in `docs/gaeb/README.md` — the schemas are
 GAEB/DIN works redistributed byte-identically; NEVER modify them, and
 never commit the Fachdokumentation PDF (© DIN, git-ignored).
-`tests/SchemaValidationTest.php` validates the nine standard fixtures
-(`description.x80`, `minimal.x83`, `boq.x83`, `priced.x84`, `realistic.x84`,
+`tests/SchemaValidationTest.php` validates the eleven standard fixtures
+(`description.x80`, `minimal.x83`, `boq.x83`, `markup.x83`, `priced.x84`,
+`components.x84`, `realistic.x84`,
 `contract.x86`, `nachtrag.x86`, `confirmation.x87`, `invoice.x89`) against
 `docs/gaeb/3.3/` with `Dom\XMLDocument::schemaValidate()`;
 they span two XSD family dirs — `2021-05_Leistungsverzeichnis/` for
