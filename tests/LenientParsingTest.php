@@ -3,7 +3,7 @@
 use Bambamboole\Gaeb\GaebParser;
 
 it('parses nonstandard element spellings and missing required parts leniently', function () {
-    $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/nonconforming.x83');
+    $gaeb = GaebParser::fromString(fixture('nonconforming.x83'));
 
     expect($gaeb->project->name)->toBe('Altbau Sanierung')
         ->and($gaeb->boq->label)->toBe('LV Sanierung')

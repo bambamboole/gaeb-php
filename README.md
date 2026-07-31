@@ -22,8 +22,8 @@ Built on PHP 8.4's native `Dom\XMLDocument` API for lightweight XML processing.
 ## Usage
 
 ```php
-$gaeb = GaebParser::fromFile('tender.x83');   // or ::fromString($xml)
-// both static methods return a GaebFile
+$gaeb = GaebParser::fromString(file_get_contents('tender.x83'));
+// returns a GaebFile; the library itself never touches the filesystem
 
 $gaeb->info;      // GaebInfo
 $gaeb->project;   // ProjectInfo
@@ -118,7 +118,7 @@ use Bambamboole\Gaeb\GaebDocument;
 use Bambamboole\Gaeb\Write\Bid;
 use Bambamboole\Gaeb\Dto\Party;
 
-$tender = GaebDocument::open('tender.x83');
+$tender = GaebDocument::fromString(file_get_contents('tender.x83'));
 
 $contractor = new Party(
     name: 'ACME Bau GmbH',
@@ -170,7 +170,7 @@ use Bambamboole\Gaeb\Dto\Payment;
 use Bambamboole\Gaeb\GaebDocument;
 use Bambamboole\Gaeb\Write\Invoice;
 
-$contract = GaebDocument::open('contract.x86');
+$contract = GaebDocument::fromString(file_get_contents('contract.x86'));
 
 $invoice = new Invoice(
     invoiceNo: 'RE-2026-001',
@@ -202,7 +202,7 @@ The contractor's order confirmation is a re-stamp of the received contract —
 same content under the DA87 namespace with `DP` 87 and a fresh `GAEBInfo`:
 
 ```php
-$contract = GaebDocument::open('contract.x86');
+$contract = GaebDocument::fromString(file_get_contents('contract.x86'));
 $x87 = $contract->createOrderConfirmation(date: '2026-06-20');  // source untouched
 $x87->validate();  // []
 ```
@@ -219,13 +219,18 @@ list of libxml error strings.
 
 ## Custom drivers / instance API
 
-`GaebParser::fromFile()`/`::fromString()` are shortcuts for `new GaebParser`.
+`GaebParser::fromString()` is a shortcut for `new GaebParser`.
 Use the instance API directly to inject your own driver(s):
 
 ```php
 $parser = new GaebParser([new MyDriver, new GaebXmlDriver]);
-$gaeb = $parser->parse($content);   // or ->parseFile($path)
+$gaeb = $parser->parse($content);
 ```
+
+The library performs no file I/O on documents: it takes XML strings (or an
+existing `Dom\XMLDocument` via `GaebDocument::fromDocument()`) and returns
+objects/strings — reading from and writing to disk is the caller's concern.
+The only files it touches are its own bundled XSDs in `validate()`.
 
 Drivers are tried in order; the first one whose `supports(string $content): bool`
 returns `true` handles the parse. Implement `Bambamboole\Gaeb\Driver\Driver`

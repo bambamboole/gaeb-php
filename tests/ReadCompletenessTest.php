@@ -4,7 +4,7 @@ use Bambamboole\Gaeb\Dto\MarkupType;
 use Bambamboole\Gaeb\GaebParser;
 
 it('parses UP component labels, remarks, performance descriptions and markup items from an x83', function () {
-    $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/markup.x83');
+    $gaeb = GaebParser::fromString(fixture('markup.x83'));
     $boq = $gaeb->boq;
 
     expect($boq->noUpComponents)->toBe(3)
@@ -40,7 +40,7 @@ it('parses UP component labels, remarks, performance descriptions and markup ite
 });
 
 it('parses UP components, discounts, VAT parts and priced markup items from an x84', function () {
-    $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/components.x84');
+    $gaeb = GaebParser::fromString(fixture('components.x84'));
     $totals = $gaeb->boq->totals;
 
     expect($totals->discountPercent)->toBeDecimal(3.0)
@@ -71,7 +71,7 @@ it('parses UP components, discounts, VAT parts and priced markup items from an x
 });
 
 it('parses category totals from an x86 contract', function () {
-    $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/contract.x86');
+    $gaeb = GaebParser::fromString(fixture('contract.x86'));
 
     expect($gaeb->boq->categories[0]->totals->total)->toBeDecimal(3475.0);
 });

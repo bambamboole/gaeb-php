@@ -4,7 +4,7 @@ use Bambamboole\Gaeb\Dto\WarrantyUnit;
 use Bambamboole\Gaeb\GaebParser;
 
 it('parses the contractor party from an X84 bid', function () {
-    $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/realistic.x84');
+    $gaeb = GaebParser::fromString(fixture('realistic.x84'));
 
     expect($gaeb->contractor)->not->toBeNull()
         ->and($gaeb->contractor->name)->toBe('Musterbau GmbH')
@@ -15,14 +15,14 @@ it('parses the contractor party from an X84 bid', function () {
         ->and($gaeb->contractor->email)->toBeNull()
         ->and($gaeb->owner)->toBeNull();
 
-    $priced = GaebParser::fromFile(__DIR__.'/fixtures/priced.x84');
+    $priced = GaebParser::fromString(fixture('priced.x84'));
     expect($priced->contractor)->not->toBeNull()
         ->and($priced->contractor->name)->toBe('Musterbau GmbH')
         ->and($priced->owner)->toBeNull();
 });
 
 it('yields null parties when OWN and CTR are absent', function () {
-    $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/boq.x83');
+    $gaeb = GaebParser::fromString(fixture('boq.x83'));
 
     expect($gaeb->owner)->toBeNull()
         ->and($gaeb->contractor)->toBeNull();
@@ -87,7 +87,7 @@ it('yields null award when AwardInfo is absent and all-null fields when it is sp
         XML);
     expect($none->award)->toBeNull();
 
-    $sparse = GaebParser::fromFile(__DIR__.'/fixtures/realistic.x84');
+    $sparse = GaebParser::fromString(fixture('realistic.x84'));
     expect($sparse->award)->not->toBeNull()
         ->and($sparse->award->contractNo)->toBeNull()
         ->and($sparse->award->warrantyUnit)->toBeNull();
@@ -109,7 +109,7 @@ it('drops an unknown WarrUnit value leniently', function () {
 });
 
 it('parses a full X86 contract file', function () {
-    $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/contract.x86');
+    $gaeb = GaebParser::fromString(fixture('contract.x86'));
 
     expect($gaeb->info->phase)->toBe(86)
         ->and($gaeb->owner->name)->toBe('Stadtwerke Musterstadt')
@@ -132,7 +132,7 @@ it('parses a full X86 contract file', function () {
 });
 
 it('parses the awarded BoQ of an X86 file through the existing BoQ model', function () {
-    $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/contract.x86');
+    $gaeb = GaebParser::fromString(fixture('contract.x86'));
 
     expect($gaeb->boq->label)->toBe('Lagerhalle Nord - Auftrags-LV')
         ->and($gaeb->boq->currency)->toBe('EUR')

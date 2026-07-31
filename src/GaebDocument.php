@@ -20,11 +20,6 @@ final class GaebDocument implements \JsonSerializable, \Stringable
         private readonly ?string $original,
     ) {}
 
-    public static function open(string $path): self
-    {
-        return self::fromString(Io::read($path));
-    }
-
     public static function fromString(string $content): self
     {
         try {
@@ -38,6 +33,16 @@ final class GaebDocument implements \JsonSerializable, \Stringable
         }
 
         return new self($dom, $content);
+    }
+
+    public static function fromDocument(XMLDocument $dom): self
+    {
+        $root = $dom->documentElement;
+        if ($root === null || $root->localName !== 'GAEB') {
+            throw new GaebParseException('Missing <GAEB> root element');
+        }
+
+        return new self($dom, null);
     }
 
     /** used by createBid for derived documents */

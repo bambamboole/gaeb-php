@@ -26,9 +26,13 @@ exists so they can be added later.
   prefixes; the GAEB namespace varies per exchange phase and version.
 - Every PHP file starts with `<?php declare(strict_types=1);`.
 - PHP `^8.4` (8.4 and 8.5).
-- The public API (`GaebParser::fromFile()/fromString()`, instance
-  `parse()/parseFile()`, the DTO property names) is a BC surface —
-  changes need approval.
+- The public API (`GaebParser::fromString()`, instance `parse()`, the DTO
+  property names) is a BC surface — changes need approval.
+- **No file I/O on documents.** The library takes XML strings or
+  `Dom\XMLDocument`s and returns objects/strings; reading and writing files
+  is the caller's concern. The ONE exception is `validate()` reading the
+  bundled XSDs (libxml's `schemaValidate()` takes a path). Tests load
+  fixtures via the `fixture()` helper in `tests/Pest.php`.
 
 ## Architecture
 
@@ -44,8 +48,8 @@ exists so they can be added later.
   Item`, plus nullable award sections `owner`/`contractor` (`Party`, from
   `Award/OWN`/`CTR`) and `award` (`AwardData`, from `Award/AwardInfo`).
   Phase differences are nullable properties; one model for all phases.
-- `GaebDocument` is the read/write handle: `open()`/`fromString()` load a
-  DOM; `file()`/`phase()` lazily parse it into a `GaebFile` via
+- `GaebDocument` is the read/write handle: `fromString()`/`fromDocument()`
+  load a DOM; `file()`/`phase()` lazily parse it into a `GaebFile` via
   `GaebXmlDriver` (cached); `validate(?string $xsdDir = null)`
   schema-checks against the bundled XSDs; `toString()` emits (also via
   `Stringable`/`(string)`; `jsonSerialize()` exposes the parsed `GaebFile`);

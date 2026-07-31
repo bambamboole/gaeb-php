@@ -107,14 +107,14 @@ it('parses unknown invoice enums and sparse headers leniently', function () {
 });
 
 it('keeps invoice null for award documents', function () {
-    $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/contract.x86');
+    $gaeb = GaebParser::fromString(fixture('contract.x86'));
 
     expect($gaeb->invoice)->toBeNull()
         ->and($gaeb->boq->items ?? null)->not->toBeNull();
 });
 
 it('parses the invoice.x89 fixture end to end', function () {
-    $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/invoice.x89');
+    $gaeb = GaebParser::fromString(fixture('invoice.x89'));
 
     expect($gaeb->info->phase)->toBe(89)
         ->and($gaeb->invoice->invoiceNo)->toBe('RE-2026-007')

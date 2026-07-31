@@ -9,7 +9,7 @@ use Bambamboole\Gaeb\Write\Invoice;
 
 function nachtragDocument(): GaebDocument
 {
-    return GaebDocument::open(__DIR__.'/fixtures/nachtrag.x86');
+    return GaebDocument::fromString(fixture('nachtrag.x86'));
 }
 
 function nachtragInvoice(): Invoice
@@ -66,7 +66,7 @@ it('parses CONo/COStatus on categories and items and leaves main-contract elemen
 });
 
 it('keeps change orders empty on files without Nachtrag data', function () {
-    $gaeb = GaebDocument::open(__DIR__.'/fixtures/contract.x86')->file();
+    $gaeb = GaebDocument::fromString(fixture('contract.x86'))->file();
 
     expect($gaeb->award->changeOrders)->toBe([])
         ->and($gaeb->boq->changeOrderNo)->toBeNull()

@@ -4,7 +4,7 @@ use Bambamboole\Gaeb\GaebDocument;
 use Bambamboole\Gaeb\GaebParser;
 
 it('parses an X80 service description', function () {
-    $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/description.x80');
+    $gaeb = GaebParser::fromString(fixture('description.x80'));
 
     expect($gaeb->info->phase)->toBe(80)
         ->and($gaeb->project->name)->toBe('Musterprojekt Lagerhalle Nord')
@@ -22,7 +22,7 @@ it('parses an X80 service description', function () {
 });
 
 it('parses an X87 order confirmation like its X86 contract', function () {
-    $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/confirmation.x87');
+    $gaeb = GaebParser::fromString(fixture('confirmation.x87'));
 
     expect($gaeb->info->phase)->toBe(87)
         ->and($gaeb->owner->name)->toBe('Stadtwerke Musterstadt')
@@ -32,5 +32,5 @@ it('parses an X87 order confirmation like its X86 contract', function () {
 });
 
 it('resolves the Leistungsverzeichnis XSD family for X80 and X87 in validate()', function (string $fixture) {
-    expect(GaebDocument::open(__DIR__.'/fixtures/'.$fixture)->validate())->toBe([]);
+    expect(GaebDocument::fromString(fixture($fixture))->validate())->toBe([]);
 })->with(['description.x80', 'confirmation.x87']);
