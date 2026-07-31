@@ -10,7 +10,11 @@ final class GaebParser
 {
     public static function fromFile(string $path): GaebFile
     {
-        $xml = @file_get_contents($path);
+        if (! is_file($path) || ! is_readable($path)) {
+            throw new GaebParseException("Cannot read file: {$path}");
+        }
+
+        $xml = file_get_contents($path);
         if ($xml === false) {
             throw new GaebParseException("Cannot read file: {$path}");
         }
