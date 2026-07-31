@@ -126,4 +126,53 @@ final class GaebDocument implements \JsonSerializable, \Stringable
 
         return self::fromDom((new InvoiceWriter)->write($this->dom, $this->file(), $invoice));
     }
+
+    /**
+     * Re-stamps this X86 contract as a new X87 order confirmation (AN→AG):
+     * same content under the DA87 namespace with DP 87 and a fresh GAEBInfo.
+     */
+    public function createOrderConfirmation(?string $date = null, string $progSystem = 'bambamboole/gaeb'): self
+    {
+        $phase = $this->phase();
+        if ($phase !== 86) {
+            $got = $phase === null ? 'none' : "X{$phase}";
+            throw new GaebWriteException("createOrderConfirmation requires an X86 source, got {$got}");
+        }
+        if ($date !== null) {
+            Assert::date($date);
+        }
+        $srcRoot = $this->dom->documentElement;
+        $srcAward = $srcRoot !== null ? Dom::child($srcRoot, 'Award') : null;
+        if ($srcRoot === null || $srcAward === null) {
+            throw new GaebWriteException('Source document has no Award; cannot create an order confirmation.');
+        }
+
+        $ns = 'http://www.gaeb.de/GAEB_DA_XML/DA87/3.3';
+        $out = XMLDocument::createEmpty();
+        $out->formatOutput = true;
+        $root = Dom::cloneInto($out, $srcRoot, $ns);
+        $out->appendChild($root);
+
+        $info = $out->createElementNS($ns, 'GAEBInfo');
+        foreach (['Version' => '3.3', 'VersDate' => '2021-05', 'Date' => $date ?? date('Y-m-d'), 'ProgSystem' => $progSystem] as $name => $text) {
+            $el = $out->createElementNS($ns, $name);
+            $el->textContent = $text;
+            $info->appendChild($el);
+        }
+        $oldInfo = Dom::child($root, 'GAEBInfo');
+        $oldInfo === null ? $root->insertBefore($info, $root->firstChild) : $root->replaceChild($info, $oldInfo);
+
+        $award = Dom::child($root, 'Award');
+        \assert($award !== null);
+        $dp = Dom::child($award, 'DP');
+        if ($dp === null) {
+            $dpEl = $out->createElementNS($ns, 'DP');
+            $dpEl->textContent = '87';
+            $award->insertBefore($dpEl, $award->firstChild);
+        } else {
+            $dp->textContent = '87';
+        }
+
+        return self::fromDom($out);
+    }
 }

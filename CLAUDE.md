@@ -53,7 +53,9 @@ exists so they can be added later.
   `GaebDocument` — the source is never mutated. Persistence (writing to
   disk) is the caller's concern, not this class's. `createInvoice(Invoice
   $invoice)` runs the X86 → X89 transform the same way (strict, cumulative
-  quantities, exact money); `validate()` resolves XSDs per phase family
+  quantities, exact money); `createOrderConfirmation()` re-stamps an X86 as
+  an X87 (DA87 namespace, DP 87, fresh GAEBInfo) via `Dom::cloneInto`;
+  `validate()` resolves XSDs per phase family
   (89 → `2021-05_Rechnung`, everything else → `2021-05_Leistungsverzeichnis`).
 - `src/Write/Bid.php` is the mutable bid builder (prices/gap
   fills/comments keyed by `rNo`); `src/Write/BidWriter.php` (`@internal`)
@@ -94,10 +96,11 @@ exists so they can be added later.
   commit a third-party GAEB file unless the redistribution license chain
   terminates at the copyright holder — an MIT-licensed repo containing
   someone else's file grants nothing.
-- The seven standard fixtures (`minimal.x83`, `boq.x83`, `priced.x84`,
-  `realistic.x84`, `contract.x86`, `nachtrag.x86`, `invoice.x89`) must validate against the
+- The nine standard fixtures (`description.x80`, `minimal.x83`, `boq.x83`,
+  `priced.x84`, `realistic.x84`, `contract.x86`, `nachtrag.x86`,
+  `confirmation.x87`, `invoice.x89`) must validate against the
   official GAEB 3.3 XSDs when they're available — they span two XSD family
-  dirs (`2021-05_Leistungsverzeichnis/` for X81–X86, `2021-05_Rechnung/` for
+  dirs (`2021-05_Leistungsverzeichnis/` for X80–X87, `2021-05_Rechnung/` for
   X89): `tests/SchemaValidationTest.php` runs `Dom\XMLDocument::schemaValidate()`
   against `docs/gaeb/3.3/` (or `GAEB_XSD_DIR`) and skips cleanly when the
   XSDs aren't present.
@@ -145,8 +148,10 @@ Activate the matching skill before working in its domain:
 
 ## GAEB cheat sheet
 
-- Phases: 81 BoQ handover · 82 cost estimate · 83 tender request ·
-  84 bid (prices!) · 85 side bid · 86 award. Extensions `.x81`–`.x86`.
+- Phases: 80 service description (unrestricted superset) · 81 BoQ handover ·
+  82 cost estimate · 83 tender request · 84 bid (prices!) · 85 side bid ·
+  86 award · 87 order confirmation (X86 near-copy, AN→AG) · 89 invoice.
+  Extensions `.x80`–`.x89`.
 - Anatomy: `GAEB → GAEBInfo (version/date/program), PrjInfo (project),
   Award → DP (phase), AwardInfo (currency), BoQ → BoQInfo
   (label/currency/totals), BoQBody → BoQCtgy* (nest via own BoQBody) →
