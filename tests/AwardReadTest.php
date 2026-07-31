@@ -102,3 +102,45 @@ it('drops an unknown WarrUnit value leniently', function () {
     expect($gaeb->award->warrantyDuration)->toBe(24)
         ->and($gaeb->award->warrantyUnit)->toBeNull();
 });
+
+it('parses a full X86 contract file', function () {
+    $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/contract.x86');
+
+    expect($gaeb->info->phase)->toBe(86)
+        ->and($gaeb->owner->name)->toBe('Stadtwerke Musterstadt')
+        ->and($gaeb->owner->street)->toBe('Rathausplatz 1')
+        ->and($gaeb->owner->zip)->toBe('12345')
+        ->and($gaeb->owner->city)->toBe('Musterstadt')
+        ->and($gaeb->owner->phone)->toBe('+49 30 1234560')
+        ->and($gaeb->owner->email)->toBe('vergabe@stadtwerke-musterstadt.example')
+        ->and($gaeb->contractor->name)->toBe('Musterbau GmbH')
+        ->and($gaeb->contractor->email)->toBe('info@musterbau.example');
+
+    expect($gaeb->award->contractNo)->toBe('A-2026-042')
+        ->and($gaeb->award->contractDate)->toBe('2026-06-15')
+        ->and($gaeb->award->bidDate)->toBe('2026-05-04')
+        ->and($gaeb->award->constructionStart)->toBe('2026-09-01')
+        ->and($gaeb->award->constructionEnd)->toBe('2027-03-31')
+        ->and($gaeb->award->warrantyDuration)->toBe(5)
+        ->and($gaeb->award->warrantyUnit)->toBe(WarrantyUnit::Years)
+        ->and($gaeb->award->warrantyEnd)->toBe('2032-03-31');
+});
+
+it('parses the awarded BoQ of an X86 file through the existing BoQ model', function () {
+    $gaeb = GaebParser::fromFile(__DIR__.'/fixtures/contract.x86');
+
+    expect($gaeb->boq->label)->toBe('Lagerhalle Nord - Auftrags-LV')
+        ->and($gaeb->boq->currency)->toBe('EUR')
+        ->and($gaeb->boq->total)->toBe(3475.00)
+        ->and($gaeb->boq->categories)->toHaveCount(1);
+
+    [$first, $second] = $gaeb->boq->categories[0]->items;
+    expect($first->rNo)->toBe('01.0010')
+        ->and($first->qty)->toBe(50.0)
+        ->and($first->unit)->toBe('m3')
+        ->and($first->unitPrice)->toBe(45.50)
+        ->and($first->totalPrice)->toBe(2275.00)
+        ->and($first->shortText)->toBe('Boden loesen')
+        ->and($second->lumpSum)->toBeTrue()
+        ->and($second->totalPrice)->toBe(1200.00);
+});

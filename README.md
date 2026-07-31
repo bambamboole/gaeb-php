@@ -39,6 +39,14 @@ with its full position number (`rNo`, e.g. `01.02.0030`) resolved. An item's
 `descriptionXml` holds the raw XML (the serialized `Description` element,
 self-contained with its own `xmlns="…"` declaration).
 
+X84/X86 files also expose the parties and (X86) the award data:
+
+```php
+$gaeb->owner;      // ?Party — client (Auftraggeber, OWN)
+$gaeb->contractor; // ?Party — contractor/bidder (Auftragnehmer, CTR)
+$gaeb->award;      // ?AwardData — contract no/date, bid date, construction period, warranty
+```
+
 ## Item classification & totals
 
 Each `Item` also carries: `provisional` (`Provisional::WithoutTotal|WithTotal`

@@ -8,6 +8,7 @@ $fixtures = [
     'boq.x83' => 'GAEB_DA_XML_83_3.3_2021-05.xsd',
     'priced.x84' => 'GAEB_DA_XML_84_3.3_2021-05.xsd',
     'realistic.x84' => 'GAEB_DA_XML_84_3.3_2021-05.xsd',
+    'contract.x86' => 'GAEB_DA_XML_86_3.3_2021-05.xsd',
 ];
 
 foreach ($fixtures as $fixture => $xsd) {
