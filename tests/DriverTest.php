@@ -21,7 +21,7 @@ it('parses a file via the instance api', function () {
 });
 
 it('uses the first supporting custom driver', function () {
-    $canned = new GaebFile(new GaebInfo('9.9', null, null, null), new ProjectInfo(null, null, null), null);
+    $canned = new GaebFile(new GaebInfo('9.9', null, null, null), new ProjectInfo(null, null, null), null, null, null);
     $driver = new class($canned) implements Driver
     {
         public function __construct(private readonly GaebFile $result) {}

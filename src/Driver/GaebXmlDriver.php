@@ -7,6 +7,7 @@ use Bambamboole\GaebParser\Dto\BoQCategory;
 use Bambamboole\GaebParser\Dto\GaebFile;
 use Bambamboole\GaebParser\Dto\GaebInfo;
 use Bambamboole\GaebParser\Dto\Item;
+use Bambamboole\GaebParser\Dto\Party;
 use Bambamboole\GaebParser\Dto\ProjectInfo;
 use Bambamboole\GaebParser\Dto\Provisional;
 use Bambamboole\GaebParser\Dto\SubDescription;
@@ -48,6 +49,8 @@ final class GaebXmlDriver implements Driver
             info: self::parseInfo($root),
             project: self::parseProject($root, $award),
             boq: $award !== null ? self::parseBoQ($award) : null,
+            owner: $award !== null ? self::parseParty(Dom::child($award, 'OWN')) : null,
+            contractor: $award !== null ? self::parseParty(Dom::child($award, 'CTR')) : null,
         );
     }
 
@@ -269,5 +272,22 @@ final class GaebXmlDriver implements Driver
         }
 
         return $subs;
+    }
+
+    private static function parseParty(?Element $party): ?Party
+    {
+        if ($party === null) {
+            return null;
+        }
+        $address = Dom::child($party, 'Address');
+
+        return new Party(
+            name: $address !== null ? Dom::text($address, 'Name1') : null,
+            street: $address !== null ? Dom::text($address, 'Street') : null,
+            zip: $address !== null ? Dom::text($address, 'PCode') : null,
+            city: $address !== null ? Dom::text($address, 'City') : null,
+            phone: $address !== null ? Dom::text($address, 'Phone') : null,
+            email: $address !== null ? Dom::text($address, 'Email') : null,
+        );
     }
 }
