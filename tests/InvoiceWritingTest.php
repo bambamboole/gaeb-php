@@ -6,6 +6,7 @@ use Bambamboole\Gaeb\Dto\SettlementType;
 use Bambamboole\Gaeb\GaebDocument;
 use Bambamboole\Gaeb\GaebWriteException;
 use Bambamboole\Gaeb\Write\Invoice;
+use Brick\Math\BigDecimal;
 
 function contractDocument(): GaebDocument
 {
@@ -26,8 +27,8 @@ it('creates a schema-valid cumulative X89 invoice from the X86 contract', functi
     $invoice->billQty('01.0010', '30')
         ->billQty('01.0020', '1')
         ->addPayment(new Payment(
-            total: '1190.00',
-            totalVat: '190.00',
+            total: BigDecimal::of('1190.00'),
+            totalVat: BigDecimal::of('190.00'),
             discountAmount: null,
             paymentDate: '2026-10-05',
             invoiceNo: 'RE-2026-000',
@@ -50,19 +51,19 @@ it('creates a schema-valid cumulative X89 invoice from the X86 contract', functi
         ->and($gaeb->invoice->creator->taxNo)->toBe('DE123456789')
         ->and($gaeb->invoice->recipient->name)->toBe('Stadtwerke Musterstadt')
         ->and($gaeb->invoice->payments)->toHaveCount(1)
-        ->and($gaeb->invoice->payments[0]->total)->toBe('1190.00')
-        ->and($gaeb->invoice->totalGross)->toBe(3052.35);
+        ->and($gaeb->invoice->payments[0]->total)->toBeDecimal('1190.00')
+        ->and($gaeb->invoice->totalGross)->toBeDecimal(3052.35);
 
     $items = iterator_to_array($gaeb->boq->allItems(), false);
     expect($items)->toHaveCount(2)
         ->and($items[0]->rNo)->toBe('01.0010')
-        ->and($items[0]->billedQty)->toBe(30.0)
-        ->and($items[0]->unitPrice)->toBe(45.5)
-        ->and($items[0]->totalPrice)->toBe(1365.00)
-        ->and($items[1]->totalPrice)->toBe(1200.00)
-        ->and($gaeb->boq->totals->total)->toBe(2565.00)
-        ->and($gaeb->boq->totals->vatAmount)->toBe(487.35)
-        ->and($gaeb->boq->totals->totalGross)->toBe(3052.35)
+        ->and($items[0]->billedQty)->toBeDecimal(30.0)
+        ->and($items[0]->unitPrice)->toBeDecimal(45.5)
+        ->and($items[0]->totalPrice)->toBeDecimal(1365.00)
+        ->and($items[1]->totalPrice)->toBeDecimal(1200.00)
+        ->and($gaeb->boq->totals->total)->toBeDecimal(2565.00)
+        ->and($gaeb->boq->totals->vatAmount)->toBeDecimal(487.35)
+        ->and($gaeb->boq->totals->totalGross)->toBeDecimal(3052.35)
         ->and($gaeb->owner->name)->toBe('Stadtwerke Musterstadt')
         ->and($gaeb->contractor->name)->toBe('Musterbau GmbH');
 });
@@ -76,9 +77,9 @@ it('bills a subset of items without touching the rest', function () {
     $items = iterator_to_array($gaeb->boq->allItems(), false);
     expect($items)->toHaveCount(1)
         ->and($items[0]->rNo)->toBe('01.0010')
-        ->and($items[0]->billedQty)->toBe(12.5)
-        ->and($items[0]->totalPrice)->toBe(568.75)  // 12.5 x 45.500
-        ->and($gaeb->boq->totals->total)->toBe(568.75);
+        ->and($items[0]->billedQty)->toBeDecimal(12.5)
+        ->and($items[0]->totalPrice)->toBeDecimal(568.75)  // 12.5 x 45.500
+        ->and($gaeb->boq->totals->total)->toBeDecimal(568.75);
 });
 
 it('rejects unknown rNos', function () {
@@ -123,7 +124,7 @@ it('rejects garbage quantities, empty identifiers and bad dates at the builder',
 it('rejects payments missing required fields', function () {
     $invoice = new Invoice('RE-1', '2026-10-31', InvoiceType::Deduction, '2026-09-01', '2026-10-31', 'DE123456789', vatPercent: '19');
     $invoice->billQty('01.0010', '1')
-        ->addPayment(new Payment(total: '1190.00', totalVat: null, discountAmount: null, paymentDate: null, invoiceNo: 'RE-0'));
+        ->addPayment(new Payment(total: BigDecimal::of('1190.00'), totalVat: null, discountAmount: null, paymentDate: null, invoiceNo: 'RE-0'));
 
     contractDocument()->createInvoice($invoice);
 })->throws(GaebWriteException::class, 'Payment is missing required field(s): totalVat, paymentDate');

@@ -2,6 +2,8 @@
 
 namespace Bambamboole\Gaeb\Dto;
 
+use Brick\Math\BigDecimal;
+
 final readonly class SubDescription
 {
     public function __construct(
@@ -9,8 +11,8 @@ final readonly class SubDescription
         public ?string $shortText,
         public ?string $longText,
         public ?string $descriptionXml,
-        public ?float $qty,
+        public ?BigDecimal $qty,
         public ?string $unit,
-        public ?float $unitPrice,
+        public ?BigDecimal $unitPrice,
     ) {}
 }

@@ -2,6 +2,8 @@
 
 namespace Bambamboole\Gaeb\Xml;
 
+use Brick\Math\BigDecimal;
+use Brick\Math\Exception\MathException;
 use Dom\Element;
 use Dom\Text;
 use Dom\XMLDocument;
@@ -76,11 +78,22 @@ final class Dom
         return $result;
     }
 
-    public static function floatVal(Element $el, string $name): ?float
+    /** Lenient decimal read: missing or non-numeric content yields null, never a throw. */
+    public static function decimal(Element $el, string $name): ?BigDecimal
     {
-        $value = self::text($el, $name);
+        return self::toDecimal(self::text($el, $name));
+    }
 
-        return $value === null ? null : (float) $value;
+    public static function toDecimal(?string $value): ?BigDecimal
+    {
+        if ($value === null) {
+            return null;
+        }
+        try {
+            return BigDecimal::of($value);
+        } catch (MathException) {
+            return null;
+        }
     }
 
     public static function intVal(Element $el, string $name): ?int

@@ -2,11 +2,13 @@
 
 namespace Bambamboole\Gaeb\Dto;
 
+use Brick\Math\BigDecimal;
+
 final readonly class VatPart
 {
     public function __construct(
-        public ?float $percent,
-        public ?float $totalNetPart,
-        public ?float $vatAmount,
+        public ?BigDecimal $percent,
+        public ?BigDecimal $totalNetPart,
+        public ?BigDecimal $vatAmount,
     ) {}
 }

@@ -136,16 +136,16 @@ it('parses the awarded BoQ of an X86 file through the existing BoQ model', funct
 
     expect($gaeb->boq->label)->toBe('Lagerhalle Nord - Auftrags-LV')
         ->and($gaeb->boq->currency)->toBe('EUR')
-        ->and($gaeb->boq->totals->total)->toBe(3475.00)
+        ->and($gaeb->boq->totals->total)->toBeDecimal(3475.00)
         ->and($gaeb->boq->categories)->toHaveCount(1);
 
     [$first, $second] = $gaeb->boq->categories[0]->items;
     expect($first->rNo)->toBe('01.0010')
-        ->and($first->qty)->toBe(50.0)
+        ->and($first->qty)->toBeDecimal(50.0)
         ->and($first->unit)->toBe('m3')
-        ->and($first->unitPrice)->toBe(45.50)
-        ->and($first->totalPrice)->toBe(2275.00)
+        ->and($first->unitPrice)->toBeDecimal(45.50)
+        ->and($first->totalPrice)->toBeDecimal(2275.00)
         ->and($first->shortText)->toBe('Boden loesen')
         ->and($second->lumpSum)->toBeTrue()
-        ->and($second->totalPrice)->toBe(1200.00);
+        ->and($second->totalPrice)->toBeDecimal(1200.00);
 });

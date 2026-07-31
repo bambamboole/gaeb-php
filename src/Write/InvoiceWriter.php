@@ -196,11 +196,11 @@ final class InvoiceWriter extends Writer
         ], 'Payment is missing required field(s): ');
 
         $el = $out->createElementNS(self::NS, 'PaymentMade');
-        $el->appendChild($this->elem($out, 'TotalVAT', (string) $this->decimal($payment->totalVat, 'payment totalVat')));
+        $el->appendChild($this->elem($out, 'TotalVAT', (string) $payment->totalVat?->toScale(2, RoundingMode::HalfUp)));
         if ($payment->discountAmount !== null) {
-            $el->appendChild($this->elem($out, 'DiscountAmt', (string) $this->decimal($payment->discountAmount, 'payment discountAmount')));
+            $el->appendChild($this->elem($out, 'DiscountAmt', (string) $payment->discountAmount->toScale(2, RoundingMode::HalfUp)));
         }
-        $el->appendChild($this->elem($out, 'Total', (string) $this->decimal($payment->total, 'payment total')));
+        $el->appendChild($this->elem($out, 'Total', (string) $payment->total?->toScale(2, RoundingMode::HalfUp)));
         $el->appendChild($this->elem($out, 'PaymentDate', (string) $payment->paymentDate));
         $el->appendChild($this->elem($out, 'InvoiceNo', (string) $payment->invoiceNo));
         if ($payment->paymentNo !== null) {
@@ -211,15 +211,6 @@ final class InvoiceWriter extends Writer
         }
 
         return $el;
-    }
-
-    private function decimal(?string $value, string $label): BigDecimal
-    {
-        try {
-            return BigDecimal::of((string) $value)->toScale(2, RoundingMode::HalfUp);
-        } catch (MathException $e) {
-            throw new GaebWriteException("Invalid {$label} \"{$value}\": {$e->getMessage()}", previous: $e);
-        }
     }
 
     /** @return array{Element, BigDecimal, BigDecimal} net and gross totals, so callers never recompute VAT/gross themselves */

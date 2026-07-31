@@ -2,6 +2,8 @@
 
 namespace Bambamboole\Gaeb\Dto;
 
+use Brick\Math\BigDecimal;
+
 final readonly class MarkupItem
 {
     /** @param list<MarkupSubQuantity> $subQuantities */
@@ -13,10 +15,10 @@ final readonly class MarkupItem
         /** xs:IDREF pointing at the referenced Item's ID attribute */
         public ?string $refItemId,
         public array $subQuantities,
-        public ?float $markupPercent,
-        public ?float $markupTotal,
-        public ?float $totalPrice,
-        public ?float $discountPercent,
+        public ?BigDecimal $markupPercent,
+        public ?BigDecimal $markupTotal,
+        public ?BigDecimal $totalPrice,
+        public ?BigDecimal $discountPercent,
         public ?string $shortText,
         public ?string $longText,
         public ?string $descriptionXml,

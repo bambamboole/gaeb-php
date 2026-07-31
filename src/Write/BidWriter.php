@@ -10,7 +10,6 @@ use Bambamboole\Gaeb\Dto\TextComplementKind;
 use Bambamboole\Gaeb\GaebWriteException;
 use Bambamboole\Gaeb\Xml\Dom;
 use Brick\Math\BigDecimal;
-use Brick\Math\Exception\MathException;
 use Brick\Math\RoundingMode;
 use Dom\Element;
 use Dom\XMLDocument;
@@ -274,17 +273,12 @@ final class BidWriter extends Writer
             // Round to the emitted precision first so UP x Qty == IT holds
             // in the document a consumer actually reads back.
             $up = $notOffered ? null : $this->bid->prices()[$rNo]->toScale(3, RoundingMode::HalfUp);
-            $qty = null;
-            if ($item->qty !== null) {
-                // Read qty from the SOURCE decimal string — no float hop.
-                // A priced item always carries a Qty in the source; the
-                // read-model float is an unreachable fallback.
-                $qtyString = Dom::text($srcItem, 'Qty') ?? (string) $item->qty;
-                try {
-                    $qty = BigDecimal::of($qtyString);
-                } catch (MathException) {
-                    throw new GaebWriteException("Item {$rNo} has a non-numeric quantity: \"{$qtyString}\"");
-                }
+            $qty = $item->qty;
+            $qtyString = Dom::text($srcItem, 'Qty');
+            if ($qty === null && $qtyString !== null) {
+                // The source carries a Qty the lenient read couldn't parse
+                // as a decimal — strict write refuses to guess.
+                throw new GaebWriteException("Item {$rNo} has a non-numeric quantity: \"{$qtyString}\"");
             }
             $it = null;
             if ($up !== null) {

@@ -14,7 +14,7 @@ it('parses an X80 service description', function () {
     $items = iterator_to_array($gaeb->boq->allItems(), false);
     expect($items)->toHaveCount(2)
         ->and($items[0]->rNo)->toBe('01.0010')
-        ->and($items[0]->qty)->toBe(120.0)
+        ->and($items[0]->qty)->toBeDecimal(120.0)
         ->and($items[0]->unitPrice)->toBeNull()
         ->and($items[1]->rNo)->toBe('01.0020')
         ->and($items[1]->qty)->toBeNull()
@@ -28,7 +28,7 @@ it('parses an X87 order confirmation like its X86 contract', function () {
         ->and($gaeb->owner->name)->toBe('Stadtwerke Musterstadt')
         ->and($gaeb->contractor->name)->toBe('Musterbau GmbH')
         ->and($gaeb->award->contractNo)->toBe('A-2026-042')
-        ->and($gaeb->boq->totals->total)->toBe(3475.00);
+        ->and($gaeb->boq->totals->total)->toBeDecimal(3475.00);
 });
 
 it('resolves the Leistungsverzeichnis XSD family for X80 and X87 in validate()', function (string $fixture) {

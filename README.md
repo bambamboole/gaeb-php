@@ -32,6 +32,12 @@ $gaeb->boq;       // ?BoQ
 foreach ($gaeb->boq->allItems() as $item) { ... }   // lazy, flattened
 ```
 
+All money and quantity fields in the object graph are
+[`Brick\Math\BigDecimal`](https://github.com/brick/math) (`?BigDecimal`,
+never floats) — values stay decimal-exact end to end, and `json_encode()`
+emits them as strings (`"45.50"`). Non-numeric content in a numeric element
+reads as `null` (lenient), like every other unparseable field.
+
 `$gaeb->info` exposes the GAEB version, exchange phase (`80`–`89`), date, and
 generating program. `$gaeb->project` exposes the project name, label, and
 currency. `$gaeb->boq` is `null` when the file has no bill of quantities;
