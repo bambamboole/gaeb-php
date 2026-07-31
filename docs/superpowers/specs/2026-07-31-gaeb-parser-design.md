@@ -50,7 +50,7 @@ no factories.
 - **GaebFile** — `info`, `project`, `boq`
 - **GaebInfo** — GAEB version, exchange phase (int 81–86), date, generating
   program name/version
-- **ProjectInfo** — project name, label, description, currency
+- **ProjectInfo** — project name, label, currency
 - **BoQ** — BoQ info (label, currency, totals if present), list of top-level
   `BoQCategory`/`Item` nodes, `allItems(): \Generator` yielding every `Item`
   depth-first with its full position number resolved
