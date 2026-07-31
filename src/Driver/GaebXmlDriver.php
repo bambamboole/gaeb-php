@@ -12,15 +12,21 @@ use Bambamboole\Gaeb\Dto\GaebInfo;
 use Bambamboole\Gaeb\Dto\InvoiceData;
 use Bambamboole\Gaeb\Dto\InvoiceType;
 use Bambamboole\Gaeb\Dto\Item;
+use Bambamboole\Gaeb\Dto\MarkupItem;
+use Bambamboole\Gaeb\Dto\MarkupSubQuantity;
+use Bambamboole\Gaeb\Dto\MarkupType;
 use Bambamboole\Gaeb\Dto\Party;
 use Bambamboole\Gaeb\Dto\Payment;
+use Bambamboole\Gaeb\Dto\PerformanceDescription;
 use Bambamboole\Gaeb\Dto\ProjectInfo;
 use Bambamboole\Gaeb\Dto\Provisional;
+use Bambamboole\Gaeb\Dto\Remark;
 use Bambamboole\Gaeb\Dto\SettlementType;
 use Bambamboole\Gaeb\Dto\SubDescription;
 use Bambamboole\Gaeb\Dto\TextComplement;
 use Bambamboole\Gaeb\Dto\TextComplementKind;
 use Bambamboole\Gaeb\Dto\Totals;
+use Bambamboole\Gaeb\Dto\VatPart;
 use Bambamboole\Gaeb\Dto\WarrantyUnit;
 use Bambamboole\Gaeb\GaebParseException;
 use Bambamboole\Gaeb\Xml\Dom;
@@ -108,11 +114,62 @@ final class GaebXmlDriver implements Driver
 
         $info = Dom::child($boq, 'BoQInfo');
         $awardInfo = Dom::child($container, 'AwardInfo');
-        $totals = $info !== null ? Dom::child($info, 'Totals') : null;
         $body = Dom::child($boq, 'BoQBody');
-        [$categories, $items] = $body !== null ? self::parseBody($body, []) : [[], []];
+        [$categories, $items, $markupItems, $remarks, $perfDescrs] = $body !== null
+            ? self::parseBody($body, [])
+            : [[], [], [], [], []];
 
-        $totalsDto = $totals !== null ? new Totals(
+        $upComponentLabels = [];
+        for ($i = 1; $info !== null && $i <= 6; $i++) {
+            $label = Dom::text($info, "LblUPComp{$i}");
+            if ($label !== null) {
+                $upComponentLabels[$i] = $label;
+            }
+        }
+
+        return new BoQ(
+            label: $info !== null ? (Dom::text($info, 'LblBoQ') ?? Dom::text($info, 'Name')) : null,
+            currency: ($info !== null ? Dom::text($info, 'Cur') : null)
+                ?? ($awardInfo !== null ? Dom::text($awardInfo, 'Cur') : null),
+            totals: $info !== null ? self::parseTotals(Dom::child($info, 'Totals')) : null,
+            categories: $categories,
+            items: $items,
+            changeOrderNo: $info !== null ? Dom::intVal($info, 'CONo') : null,
+            changeOrderStatus: $info !== null ? self::parseChangeOrderStatus($info) : null,
+            markupItems: $markupItems,
+            remarks: $remarks,
+            performanceDescriptions: $perfDescrs,
+            noUpComponents: $info !== null ? Dom::intVal($info, 'NoUPComps') : null,
+            upComponentLabels: $upComponentLabels,
+        );
+    }
+
+    private static function parseTotals(?Element $totals): ?Totals
+    {
+        if ($totals === null) {
+            return null;
+        }
+
+        $vatParts = [];
+        foreach (Dom::children($totals, 'VATPart') as $part) {
+            $percent = Dom::attr($part, 'VATPcnt');
+            $vatParts[] = new VatPart(
+                percent: is_numeric($percent) ? (float) $percent : null,
+                totalNetPart: Dom::floatVal($part, 'TotalNetPart'),
+                vatAmount: Dom::floatVal($part, 'VATAmount'),
+            );
+        }
+
+        $netUpComponents = [];
+        $netUpComp = Dom::child($totals, 'TotalNetUpComp');
+        for ($i = 1; $netUpComp !== null && $i <= 6; $i++) {
+            $value = Dom::floatVal($netUpComp, "UpComp{$i}");
+            if ($value !== null) {
+                $netUpComponents[$i] = $value;
+            }
+        }
+
+        return new Totals(
             total: Dom::floatVal($totals, 'Total'),
             discountPercent: Dom::floatVal($totals, 'DiscountPcnt'),
             discountAmount: Dom::floatVal($totals, 'DiscountAmt'),
@@ -121,23 +178,15 @@ final class GaebXmlDriver implements Driver
             vatAmount: Dom::floatVal($totals, 'VATAmount'),
             totalNet: Dom::floatVal($totals, 'TotalNet'),
             totalGross: Dom::floatVal($totals, 'TotalGross'),
-        ) : null;
-
-        return new BoQ(
-            label: $info !== null ? (Dom::text($info, 'LblBoQ') ?? Dom::text($info, 'Name')) : null,
-            currency: ($info !== null ? Dom::text($info, 'Cur') : null)
-                ?? ($awardInfo !== null ? Dom::text($awardInfo, 'Cur') : null),
-            totals: $totalsDto,
-            categories: $categories,
-            items: $items,
-            changeOrderNo: $info !== null ? Dom::intVal($info, 'CONo') : null,
-            changeOrderStatus: $info !== null ? self::parseChangeOrderStatus($info) : null,
+            totalLumpSum: Dom::floatVal($totals, 'TotalLSUM'),
+            vatParts: $vatParts,
+            netUpComponents: $netUpComponents,
         );
     }
 
     /**
      * @param  list<string>  $prefix
-     * @return array{list<BoQCategory>, list<Item>}
+     * @return array{list<BoQCategory>, list<Item>, list<MarkupItem>, list<Remark>, list<PerformanceDescription>}
      */
     private static function parseBody(Element $body, array $prefix): array
     {
@@ -147,13 +196,32 @@ final class GaebXmlDriver implements Driver
         }
 
         $items = [];
+        $markupItems = [];
         foreach (Dom::children($body, 'Itemlist') as $list) {
             foreach (Dom::children($list, 'Item') as $item) {
                 $items[] = self::parseItem($item, $prefix);
             }
+            foreach (Dom::children($list, 'MarkupItem') as $markup) {
+                $markupItems[] = self::parseMarkupItem($markup, $prefix);
+            }
         }
 
-        return [$categories, $items];
+        // Remark/PerfDescr appear both as BoQBody children (siblings of
+        // BoQCtgy) and inside Itemlists — collect from both levels.
+        $remarks = [];
+        $perfDescrs = [];
+        foreach ([[$body], Dom::children($body, 'Itemlist')] as $parents) {
+            foreach ($parents as $parent) {
+                foreach (Dom::children($parent, 'Remark') as $remark) {
+                    $remarks[] = self::parseRemark($remark);
+                }
+                foreach (Dom::children($parent, 'PerfDescr') as $descr) {
+                    $perfDescrs[] = self::parsePerfDescr($descr);
+                }
+            }
+        }
+
+        return [$categories, $items, $markupItems, $remarks, $perfDescrs];
     }
 
     /**
@@ -163,9 +231,9 @@ final class GaebXmlDriver implements Driver
     {
         $rNoPart = Dom::attr($ctgy, 'RNoPart');
         $body = Dom::child($ctgy, 'BoQBody');
-        [$categories, $items] = $body !== null
+        [$categories, $items, $markupItems, $remarks, $perfDescrs] = $body !== null
             ? self::parseBody($body, [...$prefix, $rNoPart])
-            : [[], []];
+            : [[], [], [], [], []];
 
         return new BoQCategory(
             rNoPart: $rNoPart,
@@ -174,6 +242,82 @@ final class GaebXmlDriver implements Driver
             items: $items,
             changeOrderNo: Dom::intVal($ctgy, 'CONo'),
             changeOrderStatus: self::parseChangeOrderStatus($ctgy),
+            totals: self::parseTotals(Dom::child($ctgy, 'Totals')),
+            notApplicable: Dom::text($ctgy, 'NotApplBoQ') === 'Yes',
+            markupItems: $markupItems,
+            remarks: $remarks,
+            performanceDescriptions: $perfDescrs,
+        );
+    }
+
+    /** @param list<string> $prefix */
+    private static function parseMarkupItem(Element $markup, array $prefix): MarkupItem
+    {
+        $rNoPart = Dom::attr($markup, 'RNoPart');
+        $rNoIndex = Dom::attr($markup, 'RNoIndex');
+        $rNoSegment = $rNoIndex !== '' ? "{$rNoPart}.{$rNoIndex}" : $rNoPart;
+        [$shortText, $longText, $descriptionXml] = self::extractDescriptionTexts(Dom::child($markup, 'Description'));
+
+        $subQuantities = [];
+        foreach (Dom::children($markup, 'MarkupSubQty') as $subQty) {
+            $refItem = Dom::child($subQty, 'RefItem');
+            $subQuantities[] = new MarkupSubQuantity(
+                refItemId: $refItem !== null && Dom::attr($refItem, 'IDRef') !== '' ? Dom::attr($refItem, 'IDRef') : null,
+                qty: Dom::floatVal($subQty, 'SubQty'),
+            );
+        }
+
+        $refRNo = Dom::child($markup, 'RefRNo');
+
+        return new MarkupItem(
+            rNo: implode('.', [...$prefix, $rNoSegment]),
+            rNoPart: $rNoPart,
+            id: Dom::attr($markup, 'ID') !== '' ? Dom::attr($markup, 'ID') : null,
+            markupType: MarkupType::tryFrom((string) Dom::text($markup, 'MarkupType')),
+            refItemId: $refRNo !== null && Dom::attr($refRNo, 'IDRef') !== '' ? Dom::attr($refRNo, 'IDRef') : null,
+            subQuantities: $subQuantities,
+            markupPercent: Dom::floatVal($markup, 'Markup'),
+            markupTotal: Dom::floatVal($markup, 'ITMarkup'),
+            totalPrice: Dom::floatVal($markup, 'IT'),
+            discountPercent: Dom::floatVal($markup, 'DiscountPcnt'),
+            shortText: $shortText,
+            longText: $longText,
+            descriptionXml: $descriptionXml,
+            notApplicable: Dom::text($markup, 'NotAppl') === 'Yes',
+            hourlyWork: Dom::text($markup, 'HourIt') === 'Yes',
+            provisional: Provisional::tryFrom((string) Dom::text($markup, 'Provis')),
+            changeOrderNo: Dom::intVal($markup, 'CONo'),
+            changeOrderStatus: self::parseChangeOrderStatus($markup),
+        );
+    }
+
+    private static function parseRemark(Element $remark): Remark
+    {
+        [$shortText, $longText, $descriptionXml] = self::extractDescriptionTexts(Dom::child($remark, 'Description'));
+
+        return new Remark(shortText: $shortText, longText: $longText, descriptionXml: $descriptionXml);
+    }
+
+    private static function parsePerfDescr(Element $descr): PerformanceDescription
+    {
+        $shortText = null;
+        $longTexts = [];
+        $descriptionXml = null;
+        foreach (Dom::children($descr, 'Description') as $description) {
+            [$short, $long, $xml] = self::extractDescriptionTexts($description);
+            $shortText ??= $short;
+            $descriptionXml ??= $xml;
+            if ($long !== null) {
+                $longTexts[] = $long;
+            }
+        }
+
+        return new PerformanceDescription(
+            perfNo: Dom::text($descr, 'PerfNo'),
+            label: Dom::text($descr, 'PerfLbl'),
+            shortText: $shortText,
+            longText: $longTexts === [] ? null : implode("\n", $longTexts),
+            descriptionXml: $descriptionXml,
         );
     }
 
@@ -185,6 +329,14 @@ final class GaebXmlDriver implements Driver
         $rNoSegment = $rNoIndex !== '' ? "{$rNoPart}.{$rNoIndex}" : $rNoPart;
         $description = Dom::child($item, 'Description');
         [$shortText, $longText, $descriptionXml] = self::extractDescriptionTexts($description);
+
+        $upComponents = [];
+        for ($i = 1; $i <= 6; $i++) {
+            $value = Dom::floatVal($item, "UPComp{$i}");
+            if ($value !== null) {
+                $upComponents[$i] = $value;
+            }
+        }
 
         return new Item(
             rNo: implode('.', [...$prefix, $rNoSegment]),
@@ -208,6 +360,12 @@ final class GaebXmlDriver implements Driver
             billedQty: Dom::floatVal($item, 'BillQty'),
             changeOrderNo: Dom::intVal($item, 'CONo'),
             changeOrderStatus: self::parseChangeOrderStatus($item),
+            notOffered: Dom::text($item, 'NotOffered') === 'Yes',
+            qtyToBeDetermined: Dom::text($item, 'QtyTBD') === 'Yes',
+            vat: Dom::floatVal($item, 'VAT'),
+            discountPercent: Dom::floatVal($item, 'DiscountPcnt'),
+            upComponents: $upComponents,
+            id: Dom::attr($item, 'ID') !== '' ? Dom::attr($item, 'ID') : null,
         );
     }
 

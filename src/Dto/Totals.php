@@ -13,5 +13,10 @@ final readonly class Totals
         public ?float $vatAmount,
         public ?float $totalNet,
         public ?float $totalGross,
+        public ?float $totalLumpSum = null,
+        /** @var list<VatPart> per-rate VAT breakdown for multi-rate documents */
+        public array $vatParts = [],
+        /** @var array<int, float> TotalNetUpComp/UpComp1–6, keyed 1–6 */
+        public array $netUpComponents = [],
     ) {}
 }

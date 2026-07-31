@@ -20,6 +20,9 @@ final class Bid
     /** @var array<string, string> */
     private array $comments = [];
 
+    /** @var array<string, true> */
+    private array $notOffered = [];
+
     public function __construct(
         public readonly Party $contractor,
         public readonly ?string $currency = null,
@@ -61,6 +64,14 @@ final class Bid
         return $this;
     }
 
+    /** Marks a position as not offered (spec 4.6.4: distinct from a 0.00 unit price). */
+    public function setNotOffered(string $rNo): self
+    {
+        $this->notOffered[$rNo] = true;
+
+        return $this;
+    }
+
     /** @internal @return array<string, BigDecimal> */
     public function prices(): array
     {
@@ -77,5 +88,11 @@ final class Bid
     public function comments(): array
     {
         return $this->comments;
+    }
+
+    /** @internal @return array<string, true> */
+    public function notOffered(): array
+    {
+        return $this->notOffered;
     }
 }

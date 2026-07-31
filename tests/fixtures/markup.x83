@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA83/3.3">
+  <GAEBInfo>
+    <Version>3.3</Version>
+    <VersDate>2021-05</VersDate>
+    <Date>2026-05-01</Date>
+    <ProgSystem>Fable Sample Suite 1.0</ProgSystem>
+  </GAEBInfo>
+  <PrjInfo>
+    <NamePrj>Musterprojekt Lagerhalle Nord</NamePrj>
+  </PrjInfo>
+  <Award>
+    <DP>83</DP>
+    <AwardInfo>
+      <Cur>EUR</Cur>
+    </AwardInfo>
+    <BoQ ID="B1">
+      <BoQInfo>
+        <Name>LV Zuschlaege</Name>
+        <LblBoQ>Zuschlaege und Hinweise</LblBoQ>
+        <OutlCompl>AllTxt</OutlCompl>
+        <BoQBkdn>
+          <Type>Item</Type>
+          <Length>4</Length>
+          <Num>Yes</Num>
+        </BoQBkdn>
+        <NoUPComps>3</NoUPComps>
+        <LblUPComp1 Type="Wages">Lohn</LblUPComp1>
+        <LblUPComp2 Type="Materials">Material</LblUPComp2>
+        <LblUPComp3 Type="Plant">Geraete</LblUPComp3>
+      </BoQInfo>
+      <BoQBody>
+        <Remark ID="R1">
+          <Description>
+            <CompleteText>
+              <DetailTxt>
+                <Text><p><span>Alle Preise sind netto anzugeben.</span></p></Text>
+              </DetailTxt>
+            </CompleteText>
+          </Description>
+        </Remark>
+        <BoQCtgy ID="C01" RNoPart="01">
+          <LblTx><p><span>Erdarbeiten</span></p></LblTx>
+          <BoQBody>
+            <Itemlist>
+              <PerfDescr ID="P1">
+                <PerfNo>10</PerfNo>
+                <PerfLbl>Bodenaushub allgemein</PerfLbl>
+                <Description>
+                  <CompleteText>
+                    <DetailTxt>
+                      <Text><p><span>Grundbeschreibung fuer alle Aushubpositionen.</span></p></Text>
+                    </DetailTxt>
+                  </CompleteText>
+                </Description>
+              </PerfDescr>
+              <Item ID="I0010" RNoPart="0010">
+                <Qty>100.000</Qty>
+                <QU>m3</QU>
+                <VAT>19.00</VAT>
+                <Description>
+                  <CompleteText>
+                    <DetailTxt>
+                      <Text><p><span>Boden loesen und seitlich lagern.</span></p></Text>
+                    </DetailTxt>
+                    <OutlineText>
+                      <OutlTxt><TextOutlTxt><p><span>Boden loesen</span></p></TextOutlTxt></OutlTxt>
+                    </OutlineText>
+                  </CompleteText>
+                </Description>
+              </Item>
+              <Item ID="I0020" RNoPart="0020">
+                <QtyTBD>Yes</QtyTBD>
+                <QU>h</QU>
+                <Description>
+                  <CompleteText>
+                    <DetailTxt>
+                      <Text><p><span>Stundenlohnarbeiten nach Anweisung.</span></p></Text>
+                    </DetailTxt>
+                    <OutlineText>
+                      <OutlTxt><TextOutlTxt><p><span>Stundenlohnarbeiten</span></p></TextOutlTxt></OutlTxt>
+                    </OutlineText>
+                  </CompleteText>
+                </Description>
+              </Item>
+              <MarkupItem ID="M0090" RNoPart="0090">
+                <MarkupType>AllInCat</MarkupType>
+                <Description>
+                  <CompleteText>
+                    <DetailTxt>
+                      <Text><p><span>Zuschlag auf alle Positionen dieser Kategorie.</span></p></Text>
+                    </DetailTxt>
+                    <OutlineText>
+                      <OutlTxt><TextOutlTxt><p><span>Zuschlag Kategorie</span></p></TextOutlTxt></OutlTxt>
+                    </OutlineText>
+                  </CompleteText>
+                </Description>
+              </MarkupItem>
+              <MarkupItem ID="M0091" RNoPart="0091">
+                <MarkupType>ListInSubQty</MarkupType>
+                <MarkupSubQty>
+                  <RefItem IDRef="I0010"/>
+                  <SubQty>50.000</SubQty>
+                </MarkupSubQty>
+                <Description>
+                  <CompleteText>
+                    <DetailTxt>
+                      <Text><p><span>Zuschlag auf Teilmenge der Aushubposition.</span></p></Text>
+                    </DetailTxt>
+                    <OutlineText>
+                      <OutlTxt><TextOutlTxt><p><span>Zuschlag Teilmenge</span></p></TextOutlTxt></OutlTxt>
+                    </OutlineText>
+                  </CompleteText>
+                </Description>
+              </MarkupItem>
+            </Itemlist>
+          </BoQBody>
+        </BoQCtgy>
+        <BoQCtgy ID="C02" RNoPart="02">
+          <LblTx><p><span>Entfallende Leistungen</span></p></LblTx>
+          <NotApplBoQ>Yes</NotApplBoQ>
+        </BoQCtgy>
+      </BoQBody>
+    </BoQ>
+  </Award>
+</GAEB>

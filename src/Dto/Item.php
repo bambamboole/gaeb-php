@@ -28,5 +28,13 @@ final readonly class Item
         public ?float $billedQty,
         public ?int $changeOrderNo = null,
         public ?ChangeOrderStatus $changeOrderStatus = null,
+        public bool $notOffered = false,
+        public bool $qtyToBeDetermined = false,
+        public ?float $vat = null,
+        public ?float $discountPercent = null,
+        /** @var array<int, float> UPComp1–6 unit-price components, keyed 1–6 */
+        public array $upComponents = [],
+        /** xs:ID of the Item element — target of MarkupItem IDREF references */
+        public ?string $id = null,
     ) {}
 }

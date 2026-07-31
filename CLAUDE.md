@@ -96,8 +96,9 @@ exists so they can be added later.
   commit a third-party GAEB file unless the redistribution license chain
   terminates at the copyright holder — an MIT-licensed repo containing
   someone else's file grants nothing.
-- The nine standard fixtures (`description.x80`, `minimal.x83`, `boq.x83`,
-  `priced.x84`, `realistic.x84`, `contract.x86`, `nachtrag.x86`,
+- The eleven standard fixtures (`description.x80`, `minimal.x83`, `boq.x83`,
+  `markup.x83`, `priced.x84`, `components.x84`, `realistic.x84`,
+  `contract.x86`, `nachtrag.x86`,
   `confirmation.x87`, `invoice.x89`) must validate against the
   official GAEB 3.3 XSDs when they're available — they span two XSD family
   dirs (`2021-05_Leistungsverzeichnis/` for X80–X87, `2021-05_Rechnung/` for

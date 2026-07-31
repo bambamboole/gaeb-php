@@ -41,6 +41,7 @@ final class BidWriter extends Writer
         $this->assertKnownRNos();
         $this->assertNoNotApplicableReferences();
         $this->assertGapFillsMatchComplements();
+        $this->assertNotOfferedUnpriced();
 
         $out = XMLDocument::createEmpty();
         $out->formatOutput = true;
@@ -59,12 +60,22 @@ final class BidWriter extends Writer
     {
         $missing = [];
         foreach ($this->itemsByRNo as $rNo => $item) {
-            if (! $item->notApplicable && ! array_key_exists($rNo, $this->bid->prices())) {
+            if (! $item->notApplicable
+                && ! array_key_exists($rNo, $this->bid->prices())
+                && ! isset($this->bid->notOffered()[$rNo])) {
                 $missing[] = $rNo;
             }
         }
         if ($missing !== []) {
             throw new GaebWriteException('Missing unit price for priceable item(s): '.implode(', ', $missing));
+        }
+    }
+
+    private function assertNotOfferedUnpriced(): void
+    {
+        $conflicting = array_keys(array_intersect_key($this->bid->notOffered(), $this->bid->prices()));
+        if ($conflicting !== []) {
+            throw new GaebWriteException('rNo(s) marked notOffered but also priced: '.implode(', ', $conflicting));
         }
     }
 
@@ -75,6 +86,7 @@ final class BidWriter extends Writer
             ...array_keys($this->bid->prices()),
             ...array_keys($this->bid->gapFills()),
             ...array_keys($this->bid->comments()),
+            ...array_keys($this->bid->notOffered()),
         ];
     }
 
@@ -258,9 +270,10 @@ final class BidWriter extends Writer
                 continue;
             }
 
+            $notOffered = isset($this->bid->notOffered()[$rNo]);
             // Round to the emitted precision first so UP x Qty == IT holds
             // in the document a consumer actually reads back.
-            $up = $this->bid->prices()[$rNo]->toScale(3, RoundingMode::HalfUp);
+            $up = $notOffered ? null : $this->bid->prices()[$rNo]->toScale(3, RoundingMode::HalfUp);
             $qty = null;
             if ($item->qty !== null) {
                 // Read qty from the SOURCE decimal string — no float hop.
@@ -273,9 +286,12 @@ final class BidWriter extends Writer
                     throw new GaebWriteException("Item {$rNo} has a non-numeric quantity: \"{$qtyString}\"");
                 }
             }
-            $it = $qty !== null
-                ? $qty->multipliedBy($up)->toScale(2, RoundingMode::HalfUp)
-                : $up->toScale(2, RoundingMode::HalfUp);
+            $it = null;
+            if ($up !== null) {
+                $it = $qty !== null
+                    ? $qty->multipliedBy($up)->toScale(2, RoundingMode::HalfUp)
+                    : $up->toScale(2, RoundingMode::HalfUp);
+            }
 
             $itemEl = $out->createElementNS(self::NS, 'Item');
             $itemEl->setAttribute('ID', Dom::attr($srcItem, 'ID'));
@@ -283,11 +299,16 @@ final class BidWriter extends Writer
             if ($rNoIndex !== '') {
                 $itemEl->setAttribute('RNoIndex', $rNoIndex);
             }
+            if ($notOffered) {
+                $itemEl->appendChild($this->elem($out, 'NotOffered', 'Yes'));
+            }
             if ($qty !== null) {
                 $itemEl->appendChild($this->elem($out, 'Qty', (string) $qty->toScale(3, RoundingMode::HalfUp)));
             }
-            $itemEl->appendChild($this->elem($out, 'UP', (string) $up));
-            $itemEl->appendChild($this->elem($out, 'IT', (string) $it));
+            if ($up !== null && $it !== null) {
+                $itemEl->appendChild($this->elem($out, 'UP', (string) $up));
+                $itemEl->appendChild($this->elem($out, 'IT', (string) $it));
+            }
 
             $gapFills = $this->bid->gapFills()[$rNo] ?? [];
             if ($gapFills !== []) {
@@ -300,7 +321,7 @@ final class BidWriter extends Writer
             }
 
             $elements[] = $itemEl;
-            if ($this->includedInTotal($item)) {
+            if ($it !== null && $this->includedInTotal($item)) {
                 $total = $total->plus($it);
             }
         }
