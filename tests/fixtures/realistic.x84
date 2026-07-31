@@ -16,83 +16,91 @@
     <AwardInfo>
       <Cur>EUR</Cur>
     </AwardInfo>
-    <BoQ>
+    <CTR>
+      <Address>
+        <Name1>Musterbau GmbH</Name1>
+        <Street>Baustrasse 1</Street>
+        <PCode>12345</PCode>
+        <City>Musterstadt</City>
+      </Address>
+    </CTR>
+    <BoQ ID="B1">
       <BoQInfo>
-        <Name>Lagerhalle Nord - Leistungsverzeichnis</Name>
+        <Name>LV Lagerhalle Nord</Name>
+        <BoQBkdn>
+          <Type>Item</Type>
+          <Length>4</Length>
+          <Num>Yes</Num>
+        </BoQBkdn>
         <Totals>
           <Total>9649.00</Total>
+          <DiscountPcnt>5.000000</DiscountPcnt>
+          <TotAfterDisc>9166.55</TotAfterDisc>
+          <VAT>19.00</VAT>
+          <TotalNet>9166.55</TotalNet>
+          <VATAmount>1741.64</VATAmount>
+          <TotalGross>10908.19</TotalGross>
         </Totals>
       </BoQInfo>
       <BoQBody>
-        <BoQCtgy RNoPart="01">
-          <LblTx><p><span>Erdarbeiten</span></p></LblTx>
+        <BoQCtgy ID="C01" RNoPart="01">
           <BoQBody>
             <Itemlist>
-              <Item RNoPart="0010">
+              <Item ID="I0010" RNoPart="0010">
                 <Qty>50.000</Qty>
-                <QU>m3</QU>
-                <Description>
-                  <CompleteText>
-                    <OutlineText>
-                      <OutlTxt><TextOutlTxt><p><span>Baugrube ausheben</span></p></TextOutlTxt></OutlTxt>
-                    </OutlineText>
-                    <DetailTxt>
-                      <Text><p><span>Baugrube ausheben und Erdreich seitlich lagern.</span></p><p><span>Bodenklasse 3-5 gemaess Baugrundgutachten.</span></p></Text>
-                    </DetailTxt>
-                  </CompleteText>
-                </Description>
                 <UP>45.50</UP>
                 <IT>2275.00</IT>
-              </Item>
-              <Item RNoPart="0010" RNoIndex="1">
-                <Qty>12.000</Qty>
-                <QU>m3</QU>
                 <Description>
                   <CompleteText>
-                    <OutlineText>
-                      <OutlTxt><TextOutlTxt><p><span>Zusaetzlicher Bodenaushub Fels</span></p></TextOutlTxt></OutlTxt>
-                    </OutlineText>
+                    <DetailTxt/>
                   </CompleteText>
                 </Description>
+              </Item>
+              <Item ID="I0010v1" RNoPart="0010" RNoIndex="1">
+                <Qty>12.000</Qty>
                 <UP>52.00</UP>
                 <IT>624.00</IT>
+                <Description>
+                  <CompleteText>
+                    <DetailTxt/>
+                  </CompleteText>
+                </Description>
               </Item>
             </Itemlist>
           </BoQBody>
+          <Totals>
+            <Total>2899.00</Total>
+          </Totals>
         </BoQCtgy>
-        <BoQCtgy RNoPart="02">
-          <LblTx><p><span>Beton- und Stahlbetonarbeiten</span></p></LblTx>
+        <BoQCtgy ID="C02" RNoPart="02">
           <BoQBody>
-            <BoQCtgy RNoPart="01">
-              <LblTx><p><span>Fundamente</span></p></LblTx>
+            <BoQCtgy ID="C0201" RNoPart="01">
               <BoQBody>
                 <Itemlist>
-                  <Item RNoPart="0010">
+                  <Item ID="I020100010" RNoPart="0010">
                     <Qty>30.000</Qty>
-                    <QU>m3</QU>
-                    <Description>
-                      <CompleteText>
-                        <OutlineText>
-                          <OutlTxt><TextOutlTxt><p><span>Fundamentbeton C25/30</span></p></TextOutlTxt></OutlTxt>
-                        </OutlineText>
-                        <DetailTxt>
-                          <Text><p><span>Beton C25/30 nach DIN EN 206 liefern und einbauen.</span></p></Text>
-                        </DetailTxt>
-                      </CompleteText>
-                    </Description>
                     <UP>185.00</UP>
                     <IT>5550.00</IT>
+                    <Description>
+                      <CompleteText>
+                        <DetailTxt/>
+                      </CompleteText>
+                    </Description>
                   </Item>
-                  <Item RNoPart="0020">
-                    <QU>psch</QU>
-                    <LumpSumItem>Yes</LumpSumItem>
+                  <Item ID="I020100020" RNoPart="0020">
                     <UP>1200.00</UP>
                     <IT>1200.00</IT>
                   </Item>
                 </Itemlist>
               </BoQBody>
+              <Totals>
+                <Total>6750.00</Total>
+              </Totals>
             </BoQCtgy>
           </BoQBody>
+          <Totals>
+            <Total>6750.00</Total>
+          </Totals>
         </BoQCtgy>
       </BoQBody>
     </BoQ>

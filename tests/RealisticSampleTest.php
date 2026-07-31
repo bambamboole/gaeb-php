@@ -7,7 +7,7 @@ it('parses the self-authored realistic sample fixture', function () {
 
     expect($gaeb->project->name)->toBe('Musterprojekt Lagerhalle Nord')
         ->and($gaeb->project->currency)->toBe('EUR')
-        ->and($gaeb->boq->label)->toBe('Lagerhalle Nord - Leistungsverzeichnis')
+        ->and($gaeb->boq->label)->toBe('LV Lagerhalle Nord')
         ->and($gaeb->boq->currency)->toBe('EUR')
         ->and($gaeb->boq->total)->toBe(9649.00)
         ->and($gaeb->info->program)->toBe('Fable Sample Suite 1.0');
@@ -33,5 +33,18 @@ it('parses the self-authored realistic sample fixture', function () {
     expect($noDescription->shortText)->toBeNull()
         ->and($noDescription->longText)->toBeNull()
         ->and($noDescription->descriptionXml)->toBeNull()
-        ->and($noDescription->lumpSum)->toBeTrue();
+        ->and($noDescription->lumpSum)->toBeFalse();
+});
+
+it('parses the totals breakdown', function () {
+    $totals = GaebParser::fromFile(__DIR__.'/fixtures/realistic.x84')->boq->totals;
+
+    expect($totals->total)->toBe(9649.00)
+        ->and($totals->discountPercent)->toBe(5.0)
+        ->and($totals->discountAmount)->toBeNull()
+        ->and($totals->totalAfterDiscount)->toBe(9166.55)
+        ->and($totals->vat)->toBe(19.00)
+        ->and($totals->vatAmount)->toBe(1741.64)
+        ->and($totals->totalNet)->toBe(9166.55)
+        ->and($totals->totalGross)->toBe(10908.19);
 });

@@ -40,13 +40,13 @@ segment of the root namespace.
 
 ```
 GAEB
-├── GAEBInfo            Version, Date, ProgSystem | ProgName
-├── PrjInfo             Name | NamePrj, LblPrj, Cur
+├── GAEBInfo            Version, VersDate, Date, ProgSystem | ProgName
+├── PrjInfo             NamePrj (Name is a lenient fallback only), LblPrj, Cur
 └── Award
     ├── DP              exchange phase (81–86)
     ├── AwardInfo       Cur (currency fallback)
     └── BoQ
-        ├── BoQInfo     LblBoQ | Name, Cur, Totals/Total
+        ├── BoQInfo     Name, LblBoQ, Cur, Totals/Total
         └── BoQBody
             ├── BoQCtgy (RNoPart, LblTx) → nests via its own BoQBody
             └── Itemlist
@@ -59,15 +59,40 @@ GAEB
 
 ## Real-world element variants (CRITICAL)
 
-Files from real AVA tools deviate from a naive reading of the spec. The
-parser reads BOTH spellings — never remove a fallback:
+The parser reads BOTH spellings for several fields — never remove a
+fallback. The table below states the schema-verified primary (checked with
+xmllint against the official GAEB 3.3 XSDs) versus the lenient fallback the
+parser also accepts:
 
-| Data | Primary | Also seen in the wild |
+| Data | Schema-primary | Lenient fallback |
 |---|---|---|
-| project name | `PrjInfo/Name` | `PrjInfo/NamePrj` (BVBS certification file) |
-| currency | `PrjInfo/Cur`, `BoQInfo/Cur` | `Award/AwardInfo/Cur` |
-| BoQ label | `BoQInfo/LblBoQ` | `BoQInfo/Name` |
+| project name | `PrjInfo/NamePrj` | `PrjInfo/Name` (NOT in the schema — no `Name` element exists under `PrjInfo`; kept only for real-world files that use it anyway) |
+| currency | `PrjInfo/Cur`, `BoQInfo/Cur` (X81–83 only; X84's restricted `BoQInfo` has no `Cur` at all) | `Award/AwardInfo/Cur` |
+| BoQ label | `BoQInfo/Name` (required, max 20 chars) then `BoQInfo/LblBoQ` (also legitimate, comes after `Name`) | — both are schema-valid; the parser prefers `LblBoQ` when present |
 | generator | `GAEBInfo/ProgSystem` | `GAEBInfo/ProgName` |
+
+`BoQInfo` legitimately contains BOTH `Name` (first, required) and `LblBoQ`
+(after it) — `Name` is not a "wild" variant, it's the schema-required
+identifier; `LblBoQ` is the human-readable label. `PrjInfo/Name` is the one
+true wild-file trap: it has no schema basis whatsoever, so `NamePrj` must
+always be the schema-primary read.
+
+## Other schema facts (verified with xmllint)
+
+- `GAEBInfo` requires `VersDate` right after `Version` (full required
+  order: `Version, VersDate, Date`; `Time`, `ProgSystem`, `ProgName` stay
+  optional).
+- `BoQ`, `BoQCtgy`, and `Item` all require an `ID` attribute (`xs:ID`,
+  unique across the whole document).
+- X84 (`Award`) requires `AwardInfo` and `CTR` (contractor block, needs at
+  least `Address/Name1|Street|PCode|City`) before `BoQ`.
+- X84's restricted `BoQInfo` drops `LblBoQ`, `Cur`, and `CPVCode`
+  entirely — only `Name` (≤20 chars, required), `BoQBkdn` (required),
+  `Totals`, `QtyDetermInfo` remain. X84's restricted `BoQCtgy` drops
+  `LblTx` and requires `Totals`. X84's restricted `Item` drops `QU` and
+  `LumpSumItem` entirely — those exist only in X81–83.
+- X84 item `Description/CompleteText` allows only `DetailTxt`, no
+  `OutlineText` — short text (`TextOutlTxt`) is an X81–83-only concept.
 
 More wild-file traps:
 
@@ -101,3 +126,19 @@ preserved in `Item->descriptionXml` for consumers needing formatting.
 - Use realistic element names, including the wild variants above.
 - Set the namespace to match the phase, e.g.
   `http://www.gaeb.de/GAEB_DA_XML/DA84/3.3` with `<DP>84</DP>`.
+
+## Official XSDs
+
+The official GAEB 3.3 XSD set is committed UNMODIFIED under
+`docs/gaeb/3.3/` (versioned per GAEB release). Provenance, source URL and
+copyright attribution live in `docs/gaeb/README.md` — the schemas are
+GAEB/DIN works redistributed byte-identically; NEVER modify them, and
+never commit the Fachdokumentation PDF (© DIN, git-ignored).
+`tests/SchemaValidationTest.php` validates the four standard fixtures
+(`minimal.x83`, `boq.x83`, `priced.x84`, `realistic.x84`) against
+`docs/gaeb/3.3/2021-05_Leistungsverzeichnis/` with
+`DOMDocument::schemaValidate()`; tests skip when the directory is absent.
+Point `GAEB_XSD_DIR` at a different location to override. `tests/fixtures/nonconforming.x83` is intentionally
+schema-INVALID — it exists to exercise the parser's leniency fallbacks
+(`tests/LenientParsingTest.php`) and is deliberately excluded from
+`SchemaValidationTest`.
