@@ -98,7 +98,10 @@ final class GaebDocument
 
     public function save(string $path): void
     {
-        $result = @file_put_contents($path, $this->toString());
+        if (! is_dir(dirname($path))) {
+            throw new GaebWriteException("Cannot write file: {$path}");
+        }
+        $result = file_put_contents($path, $this->toString());
         if ($result === false) {
             throw new GaebWriteException("Cannot write file: {$path}");
         }

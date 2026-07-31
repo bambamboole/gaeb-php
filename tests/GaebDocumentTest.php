@@ -42,11 +42,15 @@ it('reports a missing xsd instead of throwing', function () {
 
 it('saves to a file', function () {
     $target = sys_get_temp_dir().'/gaeb-doc-test.x83';
-    @unlink($target);
+    if (is_file($target)) {
+        unlink($target);
+    }
     GaebDocument::open(__DIR__.'/fixtures/boq.x83')->save($target);
 
     expect(file_get_contents($target))->toBe(file_get_contents(__DIR__.'/fixtures/boq.x83'));
-    @unlink($target);
+    if (is_file($target)) {
+        unlink($target);
+    }
 });
 
 it('throws GaebWriteException when saving to an unwritable path', function () {

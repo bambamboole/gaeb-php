@@ -19,13 +19,6 @@ final class BidWriter
 {
     private const NS = 'http://www.gaeb.de/GAEB_DA_XML/DA84/3.3';
 
-    /**
-     * Fixed, non-wall-clock GAEBInfo/Date. The X84 schema requires Date
-     * (unlike the design sketch's assumption that it could be omitted
-     * entirely); a literal keeps output deterministic across runs.
-     */
-    private const FIXED_DATE = '2021-05-01';
-
     public function write(\DOMDocument $source, GaebFile $file, Bid $bid): \DOMDocument
     {
         /** @var array<string, Item> $itemsByRNo */
@@ -43,7 +36,7 @@ final class BidWriter
         $root = $out->createElementNS(self::NS, 'GAEB');
         $out->appendChild($root);
 
-        $root->appendChild($this->buildGaebInfo($out));
+        $root->appendChild($this->buildGaebInfo($out, $bid));
         $root->appendChild($this->buildPrjInfo($out, $file));
         $root->appendChild($this->buildAward($out, $source, $file, $bid, $itemsByRNo));
 
@@ -78,12 +71,12 @@ final class BidWriter
         }
     }
 
-    private function buildGaebInfo(\DOMDocument $out): \DOMElement
+    private function buildGaebInfo(\DOMDocument $out, Bid $bid): \DOMElement
     {
         $info = $out->createElementNS(self::NS, 'GAEBInfo');
         $info->appendChild($out->createElementNS(self::NS, 'Version', '3.3'));
         $info->appendChild($out->createElementNS(self::NS, 'VersDate', '2021-05'));
-        $info->appendChild($out->createElementNS(self::NS, 'Date', self::FIXED_DATE));
+        $info->appendChild($out->createElementNS(self::NS, 'Date', $bid->date ?? date('Y-m-d')));
         $info->appendChild($out->createElementNS(self::NS, 'ProgSystem', 'bambamboole/gaeb-parser'));
 
         return $info;
@@ -176,6 +169,12 @@ final class BidWriter
         [$bodyEl, $total] = $srcBody !== null
             ? $this->buildBoQBody($out, $srcBody, '', $bid, $itemsByRNo)
             : [null, 0.0];
+        if ($bodyEl === null) {
+            // tgBoQ requires BoQBody — every item ended up notApplicable
+            // (or the source had none to begin with). Emitting an X84
+            // without one would be schema-invalid; strict-write refuses.
+            throw new GaebWriteException('Bid contains no items');
+        }
 
         $boq = $out->createElementNS(self::NS, 'BoQ');
         $boq->setAttribute('ID', $srcBoQ->getAttribute('ID'));
@@ -189,10 +188,7 @@ final class BidWriter
         $totalsEl->appendChild($out->createElementNS(self::NS, 'Total', number_format($total, 2, '.', '')));
         $boqInfo->appendChild($totalsEl);
         $boq->appendChild($boqInfo);
-
-        if ($bodyEl !== null) {
-            $boq->appendChild($bodyEl);
-        }
+        $boq->appendChild($bodyEl);
 
         return $boq;
     }

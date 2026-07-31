@@ -100,6 +100,99 @@ it('round-trips gap fills and comments', function () {
         ->and($items['01.02.0010']->bidderComment)->toBe('Lieferzeit 6 Wochen');
 });
 
+it('excludes notApplicable items from the bid and its totals', function () {
+    // boq.x83 can't carry NotAppl (X83 drops the element per an earlier
+    // round's schema check), so this builds a minimal inline DA83 source.
+    // Reading is lenient, so it need not be schema-valid itself.
+    $source = <<<'XML'
+    <?xml version="1.0" encoding="UTF-8"?>
+    <GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA83/3.3">
+      <GAEBInfo><Version>3.3</Version><VersDate>2021-05</VersDate><Date>2024-01-15</Date></GAEBInfo>
+      <PrjInfo><NamePrj>PRJ-NA</NamePrj><Cur>EUR</Cur></PrjInfo>
+      <Award>
+        <DP>83</DP>
+        <AwardInfo><Cur>EUR</Cur></AwardInfo>
+        <BoQ ID="B1">
+          <BoQInfo>
+            <Name>LV-NA</Name>
+            <BoQBkdn><Type>Item</Type><Length>4</Length><Num>Yes</Num></BoQBkdn>
+          </BoQInfo>
+          <BoQBody>
+            <Itemlist>
+              <Item ID="I1" RNoPart="0010">
+                <Qty>2.000</Qty>
+                <QU>m</QU>
+              </Item>
+              <Item ID="I2" RNoPart="0020">
+                <NotAppl>Yes</NotAppl>
+                <Qty>5.000</Qty>
+                <QU>m</QU>
+              </Item>
+            </Itemlist>
+          </BoQBody>
+        </BoQ>
+      </Award>
+    </GAEB>
+    XML;
+    $doc = GaebDocument::fromString($source);
+    $bid = makeBid();
+    $bid->setUnitPrice('0010', 7.5);
+
+    $parsed = GaebParser::fromString($doc->createBid($bid)->toString());
+    $items = iterator_to_array($parsed->boq->allItems(), false);
+
+    expect(array_map(fn ($i) => $i->rNo, $items))->toBe(['0010'])
+        ->and($parsed->boq->totals->total)->toBe(15.0);
+});
+
+it('writes an explicitly supplied bid date instead of today', function () {
+    $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
+    $bid = new Bid(new Contractor(
+        name: 'Muster Bau GmbH',
+        street: 'Handwerkerweg 1',
+        zip: '53179',
+        city: 'Bonn',
+        email: 'bau@example.test',
+        phone: null,
+    ), date: '2020-01-02');
+    priceAll($doc, $bid);
+
+    expect($doc->createBid($bid)->toString())->toContain('<Date>2020-01-02</Date>');
+});
+
+it('throws when the bid contains no items', function () {
+    $source = <<<'XML'
+    <?xml version="1.0" encoding="UTF-8"?>
+    <GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA83/3.3">
+      <GAEBInfo><Version>3.3</Version><VersDate>2021-05</VersDate><Date>2024-01-15</Date></GAEBInfo>
+      <PrjInfo><NamePrj>PRJ-NA</NamePrj><Cur>EUR</Cur></PrjInfo>
+      <Award>
+        <DP>83</DP>
+        <AwardInfo><Cur>EUR</Cur></AwardInfo>
+        <BoQ ID="B1">
+          <BoQInfo>
+            <Name>LV-NA</Name>
+            <BoQBkdn><Type>Item</Type><Length>4</Length><Num>Yes</Num></BoQBkdn>
+          </BoQInfo>
+          <BoQBody>
+            <Itemlist>
+              <Item ID="I1" RNoPart="0010">
+                <NotAppl>Yes</NotAppl>
+                <Qty>5.000</Qty>
+                <QU>m</QU>
+              </Item>
+            </Itemlist>
+          </BoQBody>
+        </BoQ>
+      </Award>
+    </GAEB>
+    XML;
+    $doc = GaebDocument::fromString($source);
+    $bid = makeBid();
+
+    $doc->createBid($bid);
+})->throws(GaebWriteException::class, 'Bid contains no items');
+
 it('throws when priceable items are missing prices', function () {
     $doc = GaebDocument::open(__DIR__.'/fixtures/boq.x83');
     $bid = makeBid();

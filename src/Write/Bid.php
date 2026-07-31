@@ -18,6 +18,7 @@ final class Bid
     public function __construct(
         public readonly Contractor $contractor,
         public readonly ?string $currency = null,
+        public readonly ?string $date = null,
     ) {}
 
     public function setUnitPrice(string $rNo, float $unitPrice): self
