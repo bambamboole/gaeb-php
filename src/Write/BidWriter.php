@@ -10,6 +10,7 @@ use Bambamboole\GaebParser\Dto\TextComplementKind;
 use Bambamboole\GaebParser\GaebWriteException;
 use Bambamboole\GaebParser\Xml\Dom;
 use Brick\Math\BigDecimal;
+use Brick\Math\Exception\MathException;
 use Brick\Math\RoundingMode;
 use Dom\Element;
 use Dom\Text;
@@ -349,8 +350,12 @@ final class BidWriter
                 // Read qty from the SOURCE decimal string — no float hop.
                 // A priced item always carries a Qty in the source; the
                 // read-model float is an unreachable fallback.
-                $qtyString = Dom::text($srcItem, 'Qty');
-                $qty = BigDecimal::of($qtyString ?? (string) $item->qty);
+                $qtyString = Dom::text($srcItem, 'Qty') ?? (string) $item->qty;
+                try {
+                    $qty = BigDecimal::of($qtyString);
+                } catch (MathException) {
+                    throw new GaebWriteException("Item {$rNo} has a non-numeric quantity: \"{$qtyString}\"");
+                }
             }
             $it = $qty !== null
                 ? $qty->multipliedBy($up)->toScale(2, RoundingMode::HalfUp)

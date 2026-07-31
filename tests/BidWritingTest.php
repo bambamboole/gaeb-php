@@ -444,6 +444,41 @@ it('rejects non-numeric price strings', function () {
     makeBid()->setUnitPrice('0010', 'abc');
 })->throws(GaebWriteException::class);
 
+it('wraps a non-numeric source Qty in a GaebWriteException instead of crashing', function () {
+    // Lenient reading coerces `n/a` to float 0.0 (passes parsing), so the
+    // writer only discovers the garbage when it re-reads the raw string.
+    $source = <<<'XML'
+    <?xml version="1.0" encoding="UTF-8"?>
+    <GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA83/3.3">
+      <GAEBInfo><Version>3.3</Version><VersDate>2021-05</VersDate><Date>2024-01-15</Date></GAEBInfo>
+      <PrjInfo><NamePrj>PRJ-BADQTY</NamePrj><Cur>EUR</Cur></PrjInfo>
+      <Award>
+        <DP>83</DP>
+        <AwardInfo><Cur>EUR</Cur></AwardInfo>
+        <BoQ ID="B1">
+          <BoQInfo>
+            <Name>LV-BADQTY</Name>
+            <BoQBkdn><Type>Item</Type><Length>4</Length><Num>Yes</Num></BoQBkdn>
+          </BoQInfo>
+          <BoQBody>
+            <Itemlist>
+              <Item ID="I1" RNoPart="0010">
+                <Qty>n/a</Qty>
+                <QU>m</QU>
+              </Item>
+            </Itemlist>
+          </BoQBody>
+        </BoQ>
+      </Award>
+    </GAEB>
+    XML;
+    $doc = GaebDocument::fromString($source);
+    $bid = makeBid();
+    $bid->setUnitPrice('0010', 1.0);
+
+    $doc->createBid($bid);
+})->throws(GaebWriteException::class, '0010');
+
 it('throws when the Bid date is calendar-invalid', function () {
     new Bid(new Contractor(
         name: 'Muster Bau GmbH',
