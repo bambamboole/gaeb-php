@@ -3,6 +3,7 @@
 namespace Bambamboole\Gaeb\Xml;
 
 use Dom\Element;
+use Dom\Text;
 use Dom\XMLDocument;
 
 /**
@@ -113,6 +114,28 @@ final class Dom
         }
 
         return $lines === [] ? null : implode("\n", $lines);
+    }
+
+    /** Deep-clones $el into $doc under $namespace, preserving structure, attributes, and text. */
+    public static function cloneInto(XMLDocument $doc, Element $el, string $namespace): Element
+    {
+        $new = $doc->createElementNS($namespace, $el->localName);
+        foreach ($el->attributes ?? [] as $attr) {
+            // source namespace declarations must not survive the re-homing
+            if ($attr->name === 'xmlns' || str_starts_with($attr->name, 'xmlns:')) {
+                continue;
+            }
+            $new->setAttribute($attr->name, $attr->value);
+        }
+        foreach ($el->childNodes as $child) {
+            if ($child instanceof Element) {
+                $new->appendChild(self::cloneInto($doc, $child, $namespace));
+            } elseif ($child instanceof Text) {
+                $new->appendChild($doc->createTextNode($child->wholeText));
+            }
+        }
+
+        return $new;
     }
 
     /** Whether $node has a <p> ancestor strictly between it and $el (exclusive). */

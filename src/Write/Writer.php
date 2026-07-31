@@ -4,9 +4,9 @@ namespace Bambamboole\Gaeb\Write;
 
 use Bambamboole\Gaeb\Dto\GaebFile;
 use Bambamboole\Gaeb\GaebWriteException;
+use Bambamboole\Gaeb\Xml\Dom;
 use Brick\Math\BigDecimal;
 use Dom\Element;
-use Dom\Text;
 use Dom\XMLDocument;
 
 /**
@@ -123,18 +123,6 @@ abstract class Writer
     /** Clones $el into the target document under the phase namespace, preserving structure and text. */
     protected function reNamespace(XMLDocument $out, Element $el): Element
     {
-        $new = $out->createElementNS(static::NS, $el->localName);
-        foreach ($el->attributes ?? [] as $attr) {
-            $new->setAttribute($attr->name, $attr->value);
-        }
-        foreach ($el->childNodes as $child) {
-            if ($child instanceof Element) {
-                $new->appendChild($this->reNamespace($out, $child));
-            } elseif ($child instanceof Text) {
-                $new->appendChild($out->createTextNode($child->wholeText));
-            }
-        }
-
-        return $new;
+        return Dom::cloneInto($out, $el, static::NS);
     }
 }

@@ -15,7 +15,7 @@ standard for exchanging construction-tender data: bills of quantities
 |---|---|---|---|
 | GAEB 90 | fixed-column line records; every line starts with a 2-digit record type (Satzart) | `.d81`–`.d86` | detected, rejected with a clear error |
 | GAEB 2000 | tagged text blocks `#begin[...]` / `#end[...]` | `.p81`–`.p86`, `.d81`… | detected, rejected with a clear error |
-| GAEB DA XML 3.x | XML; namespace varies per phase and version: `http://www.gaeb.de/GAEB_DA_XML/DA<phase>/<version>` | `.x81`–`.x86` | fully supported (parser is version-lenient via local-name matching) |
+| GAEB DA XML 3.x | XML; namespace varies per phase and version: `http://www.gaeb.de/GAEB_DA_XML/DA<phase>/<version>` | `.x80`–`.x89` | fully supported (parser is version-lenient via local-name matching) |
 
 Adding a format = one new class implementing
 `Bambamboole\Gaeb\Driver\Driver` (`supports()` + `parse()` →
@@ -26,12 +26,15 @@ existing DTO graph; never invent a parallel model.
 
 | DP | German name | Meaning | Prices populated? |
 |---|---|---|---|
+| 80 | Leistungsbeschreibung | service description (unrestricted superset) | no |
 | 81 | LV-Übergabe | BoQ handover | no |
 | 82 | Kostenanschlag | cost estimate | partly |
 | 83 | Angebotsaufforderung | request for tender | no |
 | 84 | Angebotsabgabe | bid submission | yes (`UP`, `IT`, `Totals`) |
 | 85 | Nebenangebot | side bid | yes |
 | 86 | Zuschlag / Auftrag | award / contract | yes |
+| 87 | Auftragsbestätigung | order confirmation (AN→AG) | yes |
+| 89 | Rechnung | invoice | yes (`BillQty`) |
 
 Phase detection: `Award/DP` element when numeric, else the `DA(8x)`
 segment of the root namespace.
@@ -174,6 +177,22 @@ until clean)
   `->contractor` (`Party`) from `OWN`/`CTR` and `->award` (`AwardData`)
   from `AwardInfo`, parsed on ANY phase where the elements exist — X84
   files therefore expose `contractor` and a sparse `award` too.
+- **X87** (Auftragsbestätigung, verified while enabling the phase +
+  `confirmation.x87`): a near-copy of the X86 XSD — same `tgAward`
+  (OWN/CTR required), same rich `tgItem`. Only structural deltas: `tgDP`
+  restricted to `87`, `tgMarkupItem` flips optionality (X86 requires
+  `ITMarkup`+`Markup` with `IT` optional; X87 requires `IT` with
+  `ITMarkup`/`Markup` optional), and one `CtlgAssign` drop.
+  `GaebDocument::createOrderConfirmation()` re-stamps an X86 source
+  (DA87 namespace via `Dom::cloneInto`, DP 87, fresh `GAEBInfo`).
+- **X80** (Leistungsbeschreibung, verified while enabling the phase +
+  `description.x80`): the unrestricted superset — `tgItem` restricts
+  NOTHING (every element optional, including the `QtyTBD`/`Qty` choice:
+  `QtyTBD Yes` with no `Qty` is valid and reads as `qty === null`).
+  Surprises: `tgAward` REQUIRES `CnstSite` (optional in every other LV
+  phase) while `OWN`/`CTR`/`AwardInfo`/`BoQ` are all optional;
+  `tgBoQInfo` requires `Name`, `LblBoQ`, `OutlCompl`, `BoQBkdn` (Totals
+  optional); `tgBoQCtgy` requires `LblTx` (Totals optional).
 - **X89** (invoice, verified while implementing the M3 read/write +
   `invoice.x89`): the X89 root is `GAEB → GAEBInfo, PrjInfo?, Invoice` —
   there is **no `Award`** at all, unlike every other phase. `tgInvoice`
@@ -321,11 +340,12 @@ The official GAEB 3.3 XSD set is committed UNMODIFIED under
 copyright attribution live in `docs/gaeb/README.md` — the schemas are
 GAEB/DIN works redistributed byte-identically; NEVER modify them, and
 never commit the Fachdokumentation PDF (© DIN, git-ignored).
-`tests/SchemaValidationTest.php` validates the seven standard fixtures
-(`minimal.x83`, `boq.x83`, `priced.x84`, `realistic.x84`, `contract.x86`,
-`nachtrag.x86`, `invoice.x89`) against `docs/gaeb/3.3/` with `Dom\XMLDocument::schemaValidate()`;
+`tests/SchemaValidationTest.php` validates the nine standard fixtures
+(`description.x80`, `minimal.x83`, `boq.x83`, `priced.x84`, `realistic.x84`,
+`contract.x86`, `nachtrag.x86`, `confirmation.x87`, `invoice.x89`) against
+`docs/gaeb/3.3/` with `Dom\XMLDocument::schemaValidate()`;
 they span two XSD family dirs — `2021-05_Leistungsverzeichnis/` for
-X81–X86, `2021-05_Rechnung/` for X89 — and tests skip when the directory is
+X80–X87, `2021-05_Rechnung/` for X89 — and tests skip when the directory is
 absent. `GAEB_XSD_DIR` now points at the `3.3` root (not a family
 subdirectory); point it at a different location to override. `tests/fixtures/nonconforming.x83` is intentionally
 schema-INVALID — it exists to exercise the parser's leniency fallbacks

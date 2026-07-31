@@ -4,12 +4,14 @@ use Dom\XMLDocument;
 $xsdBase = getenv('GAEB_XSD_DIR') ?: __DIR__.'/../docs/gaeb/3.3';
 
 $fixtures = [
+    'description.x80' => '2021-05_Leistungsverzeichnis/GAEB_DA_XML_80_3.3_2021-05.xsd',
     'minimal.x83' => '2021-05_Leistungsverzeichnis/GAEB_DA_XML_83_3.3_2021-05.xsd',
     'boq.x83' => '2021-05_Leistungsverzeichnis/GAEB_DA_XML_83_3.3_2021-05.xsd',
     'priced.x84' => '2021-05_Leistungsverzeichnis/GAEB_DA_XML_84_3.3_2021-05.xsd',
     'realistic.x84' => '2021-05_Leistungsverzeichnis/GAEB_DA_XML_84_3.3_2021-05.xsd',
     'contract.x86' => '2021-05_Leistungsverzeichnis/GAEB_DA_XML_86_3.3_2021-05.xsd',
     'nachtrag.x86' => '2021-05_Leistungsverzeichnis/GAEB_DA_XML_86_3.3_2021-05.xsd',
+    'confirmation.x87' => '2021-05_Leistungsverzeichnis/GAEB_DA_XML_87_3.3_2021-05.xsd',
     'invoice.x89' => '2021-05_Rechnung/GAEB_DA_XML_89_3.3_2021-05.xsd',
 ];
 

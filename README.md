@@ -1,10 +1,11 @@
 # gaeb-php
 
 A small PHP library that parses [GAEB DA XML](https://www.gaeb.de/) 3.3 files
-(exchange phases X81–X86 plus X89 invoices) into a typed, readonly PHP object
-graph, and writes schema-valid X84 bids and X89 invoices back out. Reading is
-lenient — missing optional elements simply become `null` instead of throwing.
-Writing is strict — see ["Writing a bid (X84)"](#writing-a-bid-x84) and
+(exchange phases X80–X87 plus X89 invoices) into a typed, readonly PHP object
+graph, and writes schema-valid X84 bids, X87 order confirmations, and X89
+invoices back out. Reading is lenient — missing optional elements simply
+become `null` instead of throwing. Writing is strict — see
+["Writing a bid (X84)"](#writing-a-bid-x84) and
 ["Writing an X89 invoice from a contract"](#writing-an-x89-invoice-from-a-contract) below.
 
 ## Install
@@ -31,7 +32,7 @@ $gaeb->boq;       // ?BoQ
 foreach ($gaeb->boq->allItems() as $item) { ... }   // lazy, flattened
 ```
 
-`$gaeb->info` exposes the GAEB version, exchange phase (`81`–`86`), date, and
+`$gaeb->info` exposes the GAEB version, exchange phase (`80`–`89`), date, and
 generating program. `$gaeb->project` exposes the project name, label, and
 currency. `$gaeb->boq` is `null` when the file has no bill of quantities;
 otherwise it holds the BoQ label/currency/totals plus the top-level
@@ -177,9 +178,23 @@ Reading X89 files works through the same parser: `$gaeb->invoice` carries the
 header, parties (with tax number), payments and gross total; billed items
 appear in the BoQ with `Item->billedQty`.
 
+## Confirming an order (X86 → X87)
+
+The contractor's order confirmation is a re-stamp of the received contract —
+same content under the DA87 namespace with `DP` 87 and a fresh `GAEBInfo`:
+
+```php
+$contract = GaebDocument::open('contract.x86');
+$x87 = $contract->createOrderConfirmation(date: '2026-06-20');  // source untouched
+$x87->validate();  // []
+```
+
+Together with `createBid()` and `createInvoice()` this closes the contractor
+workflow: bid (X84) → confirm (X87) → invoice (X89).
+
 `GaebDocument::validate(?string $xsdDir = null): array` schema-checks the
 document against the XSDs bundled in the package, resolved per phase family
-under `docs/gaeb/3.3/` — `2021-05_Leistungsverzeichnis/` for X81–X86,
+under `docs/gaeb/3.3/` — `2021-05_Leistungsverzeichnis/` for X80–X87,
 `2021-05_Rechnung/` for X89; pass `$xsdDir` to validate against a different
 XSD set instead. An empty array means valid; otherwise it's the flattened
 list of libxml error strings.
@@ -200,9 +215,9 @@ to add support for another format without touching this library.
 
 ## Out of scope
 
-- Writing formats other than the X84 bid and X89 invoice transforms above:
-  from-scratch X81/X83 authoring, X86 award/rejection writing, X89B payment
-  approval
+- Writing formats other than the X84 bid, X87 confirmation, and X89 invoice
+  transforms above: from-scratch X81/X83 authoring, X86 award/rejection
+  writing, X89B payment approval
 - Multiple `InvoiceShare`s (only a single `basic amount` share is emitted),
   `COInfo`/Nachträge, cash-discount `Terms` when writing invoices
 - `NotOffered` marking, per-item `VAT`, `UPComp1–6` price components,
