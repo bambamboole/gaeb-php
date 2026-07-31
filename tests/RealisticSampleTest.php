@@ -35,3 +35,16 @@ it('parses the self-authored realistic sample fixture', function () {
         ->and($noDescription->descriptionXml)->toBeNull()
         ->and($noDescription->lumpSum)->toBeFalse();
 });
+
+it('parses the totals breakdown', function () {
+    $totals = GaebParser::fromFile(__DIR__.'/fixtures/realistic.x84')->boq->totals;
+
+    expect($totals->total)->toBe(9649.00)
+        ->and($totals->discountPercent)->toBe(5.0)
+        ->and($totals->discountAmount)->toBeNull()
+        ->and($totals->totalAfterDiscount)->toBe(9166.55)
+        ->and($totals->vat)->toBe(19.00)
+        ->and($totals->vatAmount)->toBe(1741.64)
+        ->and($totals->totalNet)->toBe(9166.55)
+        ->and($totals->totalGross)->toBe(10908.19);
+});

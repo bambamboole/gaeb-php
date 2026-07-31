@@ -15,5 +15,10 @@ final readonly class Item
         public ?float $unitPrice,
         public ?float $totalPrice,
         public bool $lumpSum,
+        public ?Provisional $provisional,
+        public bool $hourlyWork,
+        public bool $notApplicable,
+        public ?int $alternativeGroupNo,
+        public ?int $alternativeSerialNo,
     ) {}
 }

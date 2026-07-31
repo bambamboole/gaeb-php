@@ -34,6 +34,12 @@
         </BoQBkdn>
         <Totals>
           <Total>9649.00</Total>
+          <DiscountPcnt>5.000000</DiscountPcnt>
+          <TotAfterDisc>9166.55</TotAfterDisc>
+          <VAT>19.00</VAT>
+          <TotalNet>9166.55</TotalNet>
+          <VATAmount>1741.64</VATAmount>
+          <TotalGross>10908.19</TotalGross>
         </Totals>
       </BoQInfo>
       <BoQBody>

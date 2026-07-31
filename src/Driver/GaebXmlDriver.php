@@ -8,6 +8,8 @@ use Bambamboole\GaebParser\Dto\GaebFile;
 use Bambamboole\GaebParser\Dto\GaebInfo;
 use Bambamboole\GaebParser\Dto\Item;
 use Bambamboole\GaebParser\Dto\ProjectInfo;
+use Bambamboole\GaebParser\Dto\Provisional;
+use Bambamboole\GaebParser\Dto\Totals;
 use Bambamboole\GaebParser\GaebParseException;
 
 final class GaebXmlDriver implements Driver
@@ -99,6 +101,16 @@ final class GaebXmlDriver implements Driver
             currency: ($info !== null ? self::text($info, 'Cur') : null)
                 ?? ($awardInfo !== null ? self::text($awardInfo, 'Cur') : null),
             total: $totals !== null ? self::floatVal($totals, 'Total') : null,
+            totals: $totals !== null ? new Totals(
+                total: self::floatVal($totals, 'Total'),
+                discountPercent: self::floatVal($totals, 'DiscountPcnt'),
+                discountAmount: self::floatVal($totals, 'DiscountAmt'),
+                totalAfterDiscount: self::floatVal($totals, 'TotAfterDisc'),
+                vat: self::floatVal($totals, 'VAT'),
+                vatAmount: self::floatVal($totals, 'VATAmount'),
+                totalNet: self::floatVal($totals, 'TotalNet'),
+                totalGross: self::floatVal($totals, 'TotalGross'),
+            ) : null,
             categories: $categories,
             items: $items,
         );
@@ -173,6 +185,11 @@ final class GaebXmlDriver implements Driver
             unitPrice: self::floatVal($item, 'UP'),
             totalPrice: self::floatVal($item, 'IT'),
             lumpSum: self::text($item, 'LumpSumItem') === 'Yes',
+            provisional: Provisional::tryFrom((string) self::text($item, 'Provis')),
+            hourlyWork: self::text($item, 'HourIt') === 'Yes',
+            notApplicable: self::text($item, 'NotAppl') === 'Yes',
+            alternativeGroupNo: self::intVal($item, 'ALNGroupNo'),
+            alternativeSerialNo: self::intVal($item, 'ALNSerNo'),
         );
     }
 
@@ -216,6 +233,13 @@ final class GaebXmlDriver implements Driver
         $value = self::text($el, $name);
 
         return $value === null ? null : (float) $value;
+    }
+
+    private static function intVal(\DOMElement $el, string $name): ?int
+    {
+        $value = self::text($el, $name);
+
+        return $value !== null && ctype_digit($value) ? (int) $value : null;
     }
 
     /** Flatten GAEB rich text (<p><span>…) to plain text, paragraphs joined by newlines. */

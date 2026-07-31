@@ -35,6 +35,21 @@ category/item tree, and `allItems()` lazily yields every `Item` depth-first
 with its full position number (`rNo`, e.g. `01.02.0030`) resolved. An item's
 `descriptionXml` holds the raw XML (the serialized `Description` element).
 
+## Item classification & totals
+
+Each `Item` also carries: `provisional` (`Provisional::WithoutTotal|WithTotal`
+— a Bedarfsposition, `null` when the item isn't one), `hourlyWork` (Stundenlohnarbeiten),
+`notApplicable` (a dropped/void position), and `alternativeGroupNo`/`alternativeSerialNo`
+(the `ALNGroupNo`/`ALNSerNo` pair linking a base position to its alternatives).
+Sum semantics are the caller's responsibility: for an alternative group only the
+awarded serial number counts, `Provisional::WithoutTotal` and `notApplicable`
+items are excluded from BoQ totals, and `hourlyWork` items are typically listed
+separately from the main sum.
+
+`$gaeb->boq->totals` (`?Totals`) holds the full breakdown when present: `total`,
+`discountPercent`, `discountAmount`, `totalAfterDiscount`, `vat`, `vatAmount`,
+`totalNet`, `totalGross`.
+
 ## Custom drivers / instance API
 
 `GaebParser::fromFile()`/`::fromString()` are shortcuts for `new GaebParser`.

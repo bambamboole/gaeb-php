@@ -57,6 +57,67 @@
             </BoQCtgy>
           </BoQBody>
         </BoQCtgy>
+        <BoQCtgy ID="C03" RNoPart="03">
+          <LblTx><p><span>Zusatzleistungen</span></p></LblTx>
+          <BoQBody>
+            <Itemlist>
+              <Item ID="I0030" RNoPart="0030">
+                <Provis>WithTotal</Provis>
+                <Qty>5.000</Qty>
+                <QU>Stk</QU>
+                <Description>
+                  <CompleteText>
+                    <DetailTxt/>
+                    <OutlineText>
+                      <OutlTxt><TextOutlTxt><p><span>Bedarfsposition Fundament</span></p></TextOutlTxt></OutlTxt>
+                    </OutlineText>
+                  </CompleteText>
+                </Description>
+              </Item>
+              <Item ID="I0040" RNoPart="0040">
+                <ALNGroupNo>1</ALNGroupNo>
+                <ALNSerNo>1</ALNSerNo>
+                <Qty>10.000</Qty>
+                <QU>m2</QU>
+                <Description>
+                  <CompleteText>
+                    <DetailTxt/>
+                    <OutlineText>
+                      <OutlTxt><TextOutlTxt><p><span>Bodenbelag Standard</span></p></TextOutlTxt></OutlTxt>
+                    </OutlineText>
+                  </CompleteText>
+                </Description>
+              </Item>
+              <Item ID="I0040v1" RNoPart="0040" RNoIndex="1">
+                <ALNGroupNo>1</ALNGroupNo>
+                <ALNSerNo>2</ALNSerNo>
+                <Qty>10.000</Qty>
+                <QU>m2</QU>
+                <Description>
+                  <CompleteText>
+                    <DetailTxt/>
+                    <OutlineText>
+                      <OutlTxt><TextOutlTxt><p><span>Bodenbelag Premium</span></p></TextOutlTxt></OutlTxt>
+                    </OutlineText>
+                  </CompleteText>
+                </Description>
+              </Item>
+              <Item ID="I0050" RNoPart="0050">
+                <HourIt>Yes</HourIt>
+                <Qty>20.000</Qty>
+                <QU>Std</QU>
+                <Description>
+                  <CompleteText>
+                    <DetailTxt/>
+                    <OutlineText>
+                      <OutlTxt><TextOutlTxt><p><span>Stundenlohnarbeiten Elektrik</span></p></TextOutlTxt></OutlTxt>
+                    </OutlineText>
+                  </CompleteText>
+                </Description>
+              </Item>
+            </Itemlist>
+          </BoQBody>
+        </BoQCtgy>
       </BoQBody>
     </BoQ>
   </Award>
