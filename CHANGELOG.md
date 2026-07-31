@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.2.0](https://github.com/bambamboole/gaeb-php/compare/v0.1.0...v0.2.0) (2026-07-31)
+
+
+### ⚠ BREAKING CHANGES
+
+* GaebParser::fromFile()/parseFile() and
+* read-model numeric properties are BigDecimal objects, Payment money fields take BigDecimal, and jsonSerialize() emits numeric values as strings.
+* Dto\Contractor is gone (Bid takes Dto\Party) and
+
+### Features
+
+* decimal-exact read model via BigDecimal ([b4d320b](https://github.com/bambamboole/gaeb-php/commit/b4d320bcb4a34e6f8feb0dea5dba4cd7d6d5cabc))
+* enable X87 + X80 phases with fixtures and X86→X87 confirmation ([2ed0622](https://github.com/bambamboole/gaeb-php/commit/2ed062200e615b936a114126341a5f1e466a9f36))
+* enable X87 + X80 phases with fixtures and X86→X87 confirmation ([fb51a62](https://github.com/bambamboole/gaeb-php/commit/fb51a628668ba6a0f852d99fade201981f2df517))
+* LV read-model completeness wave and not-offered bid positions ([786d78a](https://github.com/bambamboole/gaeb-php/commit/786d78a3b66793924bc7bcf5acc8a835b00abc01))
+* LV read-model completeness wave and not-offered bid positions ([96ad8a9](https://github.com/bambamboole/gaeb-php/commit/96ad8a96c22b6c64efb9b582085cb39c27e0ae9b))
+* Nachtrag (change order) support ([ed09a10](https://github.com/bambamboole/gaeb-php/commit/ed09a108c400788798df098c3ca6f7459e27e806))
+* parse Nachtrag data and guard X89 billing on approval ([8c62c31](https://github.com/bambamboole/gaeb-php/commit/8c62c31729451feaad136b97f2de5949185c8283))
+* X89B supporting document (Rechnungsbegründende Unterlage) ([80534e8](https://github.com/bambamboole/gaeb-php/commit/80534e81ecd1cd7c0ad13dd8919c78745de1ab0a))
+* X89B supporting document (Rechnungsbegründende Unterlage) ([5b21440](https://github.com/bambamboole/gaeb-php/commit/5b21440f641e22513c82e2a83702d2e768da8da3))
+
+
+### Refactoring
+
+* apply over-engineering audit cuts ([3d07414](https://github.com/bambamboole/gaeb-php/commit/3d07414d335a81f47fa7e6977762d1d955f54f5a))
+* remove file I/O from the library API ([8b37503](https://github.com/bambamboole/gaeb-php/commit/8b37503035405d50bbdac25aefdd2b8208712a24))
+
 ## 0.1.0 (2026-07-31)
 
 
