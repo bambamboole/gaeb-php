@@ -14,6 +14,7 @@ use Bambamboole\GaebParser\Dto\TextComplement;
 use Bambamboole\GaebParser\Dto\TextComplementKind;
 use Bambamboole\GaebParser\Dto\Totals;
 use Bambamboole\GaebParser\GaebParseException;
+use Bambamboole\GaebParser\Xml\Dom;
 
 final class GaebXmlDriver implements Driver
 {
@@ -43,7 +44,7 @@ final class GaebXmlDriver implements Driver
             throw new GaebParseException('Missing <GAEB> root element');
         }
 
-        $award = self::child($root, 'Award');
+        $award = Dom::child($root, 'Award');
 
         return new GaebFile(
             info: self::parseInfo($root),
@@ -54,11 +55,11 @@ final class GaebXmlDriver implements Driver
 
     private static function parseInfo(\DOMElement $root): GaebInfo
     {
-        $info = self::child($root, 'GAEBInfo');
-        $award = self::child($root, 'Award');
+        $info = Dom::child($root, 'GAEBInfo');
+        $award = Dom::child($root, 'Award');
 
         $phase = null;
-        $dp = $award !== null ? self::text($award, 'DP') : null;
+        $dp = $award !== null ? Dom::text($award, 'DP') : null;
         if ($dp !== null && ctype_digit($dp)) {
             $phase = (int) $dp;
         } elseif (preg_match('~/DA(8\d)/~', (string) $root->namespaceURI, $m) === 1) {
@@ -66,54 +67,54 @@ final class GaebXmlDriver implements Driver
         }
 
         return new GaebInfo(
-            version: $info !== null ? self::text($info, 'Version') : null,
+            version: $info !== null ? Dom::text($info, 'Version') : null,
             phase: $phase,
-            date: $info !== null ? self::text($info, 'Date') : null,
-            program: $info !== null ? (self::text($info, 'ProgSystem') ?? self::text($info, 'ProgName')) : null,
+            date: $info !== null ? Dom::text($info, 'Date') : null,
+            program: $info !== null ? (Dom::text($info, 'ProgSystem') ?? Dom::text($info, 'ProgName')) : null,
         );
     }
 
     private static function parseProject(\DOMElement $root, ?\DOMElement $award): ProjectInfo
     {
-        $prj = self::child($root, 'PrjInfo');
-        $awardInfo = $award !== null ? self::child($award, 'AwardInfo') : null;
+        $prj = Dom::child($root, 'PrjInfo');
+        $awardInfo = $award !== null ? Dom::child($award, 'AwardInfo') : null;
 
         return new ProjectInfo(
-            name: $prj !== null ? (self::text($prj, 'NamePrj') ?? self::text($prj, 'Name')) : null,
-            label: $prj !== null ? self::text($prj, 'LblPrj') : null,
-            currency: ($prj !== null ? self::text($prj, 'Cur') : null)
-                ?? ($awardInfo !== null ? self::text($awardInfo, 'Cur') : null),
+            name: $prj !== null ? (Dom::text($prj, 'NamePrj') ?? Dom::text($prj, 'Name')) : null,
+            label: $prj !== null ? Dom::text($prj, 'LblPrj') : null,
+            currency: ($prj !== null ? Dom::text($prj, 'Cur') : null)
+                ?? ($awardInfo !== null ? Dom::text($awardInfo, 'Cur') : null),
         );
     }
 
     private static function parseBoQ(\DOMElement $award): ?BoQ
     {
-        $boq = self::child($award, 'BoQ');
+        $boq = Dom::child($award, 'BoQ');
         if ($boq === null) {
             return null;
         }
 
-        $info = self::child($boq, 'BoQInfo');
-        $awardInfo = self::child($award, 'AwardInfo');
-        $totals = $info !== null ? self::child($info, 'Totals') : null;
-        $body = self::child($boq, 'BoQBody');
+        $info = Dom::child($boq, 'BoQInfo');
+        $awardInfo = Dom::child($award, 'AwardInfo');
+        $totals = $info !== null ? Dom::child($info, 'Totals') : null;
+        $body = Dom::child($boq, 'BoQBody');
         [$categories, $items] = $body !== null ? self::parseBody($body, []) : [[], []];
 
         $totalsDto = $totals !== null ? new Totals(
-            total: self::floatVal($totals, 'Total'),
-            discountPercent: self::floatVal($totals, 'DiscountPcnt'),
-            discountAmount: self::floatVal($totals, 'DiscountAmt'),
-            totalAfterDiscount: self::floatVal($totals, 'TotAfterDisc'),
-            vat: self::floatVal($totals, 'VAT'),
-            vatAmount: self::floatVal($totals, 'VATAmount'),
-            totalNet: self::floatVal($totals, 'TotalNet'),
-            totalGross: self::floatVal($totals, 'TotalGross'),
+            total: Dom::floatVal($totals, 'Total'),
+            discountPercent: Dom::floatVal($totals, 'DiscountPcnt'),
+            discountAmount: Dom::floatVal($totals, 'DiscountAmt'),
+            totalAfterDiscount: Dom::floatVal($totals, 'TotAfterDisc'),
+            vat: Dom::floatVal($totals, 'VAT'),
+            vatAmount: Dom::floatVal($totals, 'VATAmount'),
+            totalNet: Dom::floatVal($totals, 'TotalNet'),
+            totalGross: Dom::floatVal($totals, 'TotalGross'),
         ) : null;
 
         return new BoQ(
-            label: $info !== null ? (self::text($info, 'LblBoQ') ?? self::text($info, 'Name')) : null,
-            currency: ($info !== null ? self::text($info, 'Cur') : null)
-                ?? ($awardInfo !== null ? self::text($awardInfo, 'Cur') : null),
+            label: $info !== null ? (Dom::text($info, 'LblBoQ') ?? Dom::text($info, 'Name')) : null,
+            currency: ($info !== null ? Dom::text($info, 'Cur') : null)
+                ?? ($awardInfo !== null ? Dom::text($awardInfo, 'Cur') : null),
             total: $totalsDto?->total,
             totals: $totalsDto,
             categories: $categories,
@@ -128,13 +129,13 @@ final class GaebXmlDriver implements Driver
     private static function parseBody(\DOMElement $body, array $prefix): array
     {
         $categories = [];
-        foreach (self::children($body, 'BoQCtgy') as $ctgy) {
+        foreach (Dom::children($body, 'BoQCtgy') as $ctgy) {
             $categories[] = self::parseCategory($ctgy, $prefix);
         }
 
         $items = [];
-        foreach (self::children($body, 'Itemlist') as $list) {
-            foreach (self::children($list, 'Item') as $item) {
+        foreach (Dom::children($body, 'Itemlist') as $list) {
+            foreach (Dom::children($list, 'Item') as $item) {
                 $items[] = self::parseItem($item, $prefix);
             }
         }
@@ -148,14 +149,14 @@ final class GaebXmlDriver implements Driver
     private static function parseCategory(\DOMElement $ctgy, array $prefix): BoQCategory
     {
         $rNoPart = $ctgy->getAttribute('RNoPart');
-        $body = self::child($ctgy, 'BoQBody');
+        $body = Dom::child($ctgy, 'BoQBody');
         [$categories, $items] = $body !== null
             ? self::parseBody($body, [...$prefix, $rNoPart])
             : [[], []];
 
         return new BoQCategory(
             rNoPart: $rNoPart,
-            label: self::flatten(self::child($ctgy, 'LblTx')),
+            label: Dom::flatten(Dom::child($ctgy, 'LblTx')),
             categories: $categories,
             items: $items,
         );
@@ -167,25 +168,25 @@ final class GaebXmlDriver implements Driver
         $rNoPart = $item->getAttribute('RNoPart');
         $rNoIndex = $item->getAttribute('RNoIndex');
         $rNoSegment = $rNoIndex !== '' ? "{$rNoPart}.{$rNoIndex}" : $rNoPart;
-        $description = self::child($item, 'Description');
+        $description = Dom::child($item, 'Description');
         [$shortText, $longText, $descriptionXml] = self::extractDescriptionTexts($description);
 
         return new Item(
             rNo: implode('.', [...$prefix, $rNoSegment]),
             rNoPart: $rNoPart,
-            qty: self::floatVal($item, 'Qty'),
-            unit: self::text($item, 'QU'),
+            qty: Dom::floatVal($item, 'Qty'),
+            unit: Dom::text($item, 'QU'),
             shortText: $shortText,
             longText: $longText,
             descriptionXml: $descriptionXml,
-            unitPrice: self::floatVal($item, 'UP'),
-            totalPrice: self::floatVal($item, 'IT'),
-            lumpSum: self::text($item, 'LumpSumItem') === 'Yes',
-            provisional: Provisional::tryFrom((string) self::text($item, 'Provis')),
-            hourlyWork: self::text($item, 'HourIt') === 'Yes',
-            notApplicable: self::text($item, 'NotAppl') === 'Yes',
-            alternativeGroupNo: self::intVal($item, 'ALNGroupNo'),
-            alternativeSerialNo: self::intVal($item, 'ALNSerNo'),
+            unitPrice: Dom::floatVal($item, 'UP'),
+            totalPrice: Dom::floatVal($item, 'IT'),
+            lumpSum: Dom::text($item, 'LumpSumItem') === 'Yes',
+            provisional: Provisional::tryFrom((string) Dom::text($item, 'Provis')),
+            hourlyWork: Dom::text($item, 'HourIt') === 'Yes',
+            notApplicable: Dom::text($item, 'NotAppl') === 'Yes',
+            alternativeGroupNo: Dom::intVal($item, 'ALNGroupNo'),
+            alternativeSerialNo: Dom::intVal($item, 'ALNSerNo'),
             textComplements: self::parseTextComplements($description),
             bidderComment: self::parseBidderComment($item),
             subDescriptions: self::parseSubDescriptions($item),
@@ -198,14 +199,14 @@ final class GaebXmlDriver implements Driver
         if ($description === null) {
             return [null, null, null];
         }
-        $complete = self::child($description, 'CompleteText');
+        $complete = Dom::child($description, 'CompleteText');
         $shortText = null;
         $longText = null;
         if ($complete !== null) {
             $outline = $complete->getElementsByTagNameNS('*', 'TextOutlTxt');
-            $shortText = $outline->length > 0 ? self::flatten($outline->item(0)) : null;
+            $shortText = $outline->length > 0 ? Dom::flatten($outline->item(0)) : null;
             $detail = $complete->getElementsByTagNameNS('*', 'DetailTxt');
-            $longText = $detail->length > 0 ? self::flatten($detail->item(0)) : null;
+            $longText = $detail->length > 0 ? Dom::flatten($detail->item(0)) : null;
         }
 
         return [$shortText, $longText, $description->ownerDocument?->saveXML($description) ?: null];
@@ -227,9 +228,9 @@ final class GaebXmlDriver implements Driver
             $complements[] = new TextComplement(
                 markLabel: ctype_digit($markLabel) ? (int) $markLabel : 0,
                 kind: $kind,
-                caption: self::flatten(self::child($node, 'ComplCaption')),
-                body: self::flatten(self::child($node, 'ComplBody')),
-                tail: self::flatten(self::child($node, 'ComplTail')),
+                caption: Dom::flatten(Dom::child($node, 'ComplCaption')),
+                body: Dom::flatten(Dom::child($node, 'ComplBody')),
+                tail: Dom::flatten(Dom::child($node, 'ComplTail')),
             );
         }
 
@@ -239,8 +240,8 @@ final class GaebXmlDriver implements Driver
     private static function parseBidderComment(\DOMElement $item): ?string
     {
         $comments = [];
-        foreach (self::children($item, 'BidComm') as $comm) {
-            $flattened = self::flatten($comm);
+        foreach (Dom::children($item, 'BidComm') as $comm) {
+            $flattened = Dom::flatten($comm);
             if ($flattened !== null) {
                 $comments[] = $flattened;
             }
@@ -253,108 +254,19 @@ final class GaebXmlDriver implements Driver
     private static function parseSubDescriptions(\DOMElement $item): array
     {
         $subs = [];
-        foreach (self::children($item, 'SubDescr') as $sub) {
-            [$shortText, $longText, $descriptionXml] = self::extractDescriptionTexts(self::child($sub, 'Description'));
+        foreach (Dom::children($item, 'SubDescr') as $sub) {
+            [$shortText, $longText, $descriptionXml] = self::extractDescriptionTexts(Dom::child($sub, 'Description'));
             $subs[] = new SubDescription(
-                subDNo: self::text($sub, 'SubDNo'),
+                subDNo: Dom::text($sub, 'SubDNo'),
                 shortText: $shortText,
                 longText: $longText,
                 descriptionXml: $descriptionXml,
-                qty: self::floatVal($sub, 'Qty'),
-                unit: self::text($sub, 'QU'),
-                unitPrice: self::floatVal($sub, 'UP'),
+                qty: Dom::floatVal($sub, 'Qty'),
+                unit: Dom::text($sub, 'QU'),
+                unitPrice: Dom::floatVal($sub, 'UP'),
             );
         }
 
         return $subs;
-    }
-
-    private static function child(\DOMElement $el, string $name): ?\DOMElement
-    {
-        foreach ($el->childNodes as $node) {
-            if ($node instanceof \DOMElement && $node->localName === $name) {
-                return $node;
-            }
-        }
-
-        return null;
-    }
-
-    private static function text(\DOMElement $el, string $name): ?string
-    {
-        $node = self::child($el, $name);
-        if ($node === null) {
-            return null;
-        }
-        $value = trim($node->textContent);
-
-        return $value === '' ? null : $value;
-    }
-
-    /** @return list<\DOMElement> */
-    private static function children(\DOMElement $el, string $name): array
-    {
-        $result = [];
-        foreach ($el->childNodes as $node) {
-            if ($node instanceof \DOMElement && $node->localName === $name) {
-                $result[] = $node;
-            }
-        }
-
-        return $result;
-    }
-
-    private static function floatVal(\DOMElement $el, string $name): ?float
-    {
-        $value = self::text($el, $name);
-
-        return $value === null ? null : (float) $value;
-    }
-
-    private static function intVal(\DOMElement $el, string $name): ?int
-    {
-        $value = self::text($el, $name);
-
-        return $value !== null && ctype_digit($value) ? (int) $value : null;
-    }
-
-    /** Flatten GAEB rich text (<p><span>…) to plain text, paragraphs joined by newlines. */
-    private static function flatten(?\DOMElement $el): ?string
-    {
-        if ($el === null) {
-            return null;
-        }
-        $paragraphs = $el->getElementsByTagNameNS('*', 'p');
-        if ($paragraphs->length === 0) {
-            $value = trim($el->textContent);
-
-            return $value === '' ? null : $value;
-        }
-        $lines = [];
-        foreach ($paragraphs as $p) {
-            if (self::hasAncestorP($p, $el)) {
-                continue;
-            }
-            $line = trim($p->textContent);
-            if ($line !== '') {
-                $lines[] = $line;
-            }
-        }
-
-        return $lines === [] ? null : implode("\n", $lines);
-    }
-
-    /** Whether $node has a <p> ancestor strictly between it and $el (exclusive). */
-    private static function hasAncestorP(\DOMElement $node, \DOMElement $el): bool
-    {
-        $parent = $node->parentNode;
-        while ($parent instanceof \DOMElement && $parent !== $el) {
-            if ($parent->localName === 'p') {
-                return true;
-            }
-            $parent = $parent->parentNode;
-        }
-
-        return false;
     }
 }
