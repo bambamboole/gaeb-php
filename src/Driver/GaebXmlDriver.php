@@ -2,6 +2,7 @@
 
 namespace Bambamboole\GaebParser\Driver;
 
+use Bambamboole\GaebParser\Dto\AwardData;
 use Bambamboole\GaebParser\Dto\BoQ;
 use Bambamboole\GaebParser\Dto\BoQCategory;
 use Bambamboole\GaebParser\Dto\GaebFile;
@@ -14,6 +15,7 @@ use Bambamboole\GaebParser\Dto\SubDescription;
 use Bambamboole\GaebParser\Dto\TextComplement;
 use Bambamboole\GaebParser\Dto\TextComplementKind;
 use Bambamboole\GaebParser\Dto\Totals;
+use Bambamboole\GaebParser\Dto\WarrantyUnit;
 use Bambamboole\GaebParser\GaebParseException;
 use Bambamboole\GaebParser\Xml\Dom;
 use Dom\Element;
@@ -51,6 +53,7 @@ final class GaebXmlDriver implements Driver
             boq: $award !== null ? self::parseBoQ($award) : null,
             owner: $award !== null ? self::parseParty(Dom::child($award, 'OWN')) : null,
             contractor: $award !== null ? self::parseParty(Dom::child($award, 'CTR')) : null,
+            award: $award !== null ? self::parseAwardData(Dom::child($award, 'AwardInfo')) : null,
         );
     }
 
@@ -288,6 +291,24 @@ final class GaebXmlDriver implements Driver
             city: $address !== null ? Dom::text($address, 'City') : null,
             phone: $address !== null ? Dom::text($address, 'Phone') : null,
             email: $address !== null ? Dom::text($address, 'Email') : null,
+        );
+    }
+
+    private static function parseAwardData(?Element $awardInfo): ?AwardData
+    {
+        if ($awardInfo === null) {
+            return null;
+        }
+
+        return new AwardData(
+            contractNo: Dom::text($awardInfo, 'ContrNo'),
+            contractDate: Dom::text($awardInfo, 'ContrDate'),
+            bidDate: Dom::text($awardInfo, 'BidDate'),
+            constructionStart: Dom::text($awardInfo, 'CnstStart'),
+            constructionEnd: Dom::text($awardInfo, 'CnstEnd'),
+            warrantyDuration: Dom::intVal($awardInfo, 'WarrDur'),
+            warrantyUnit: WarrantyUnit::tryFrom((string) Dom::text($awardInfo, 'WarrUnit')),
+            warrantyEnd: Dom::text($awardInfo, 'WarrEnd'),
         );
     }
 }

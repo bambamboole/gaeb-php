@@ -10,5 +10,6 @@ final readonly class GaebFile
         public ?BoQ $boq,
         public ?Party $owner,
         public ?Party $contractor,
+        public ?AwardData $award,
     ) {}
 }

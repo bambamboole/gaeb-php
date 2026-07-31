@@ -1,5 +1,6 @@
 <?php declare(strict_types=1);
 
+use Bambamboole\GaebParser\Dto\WarrantyUnit;
 use Bambamboole\GaebParser\GaebParser;
 
 it('parses the contractor party from an X84 bid', function () {
@@ -38,4 +39,66 @@ it('parses a party with an empty Address leniently', function () {
         ->and($gaeb->owner->name)->toBeNull()
         ->and($gaeb->contractor)->not->toBeNull()
         ->and($gaeb->contractor->city)->toBeNull();
+});
+
+it('parses award data from AwardInfo', function () {
+    $gaeb = GaebParser::fromString(<<<'XML'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA86/3.3">
+          <Award>
+            <DP>86</DP>
+            <AwardInfo>
+              <Cur>EUR</Cur>
+              <BidDate>2026-05-04</BidDate>
+              <CnstStart>2026-09-01</CnstStart>
+              <CnstEnd>2027-03-31</CnstEnd>
+              <ContrNo>A-2026-042</ContrNo>
+              <ContrDate>2026-06-15</ContrDate>
+              <WarrDur>5</WarrDur>
+              <WarrUnit>Years</WarrUnit>
+              <WarrEnd>2032-03-31</WarrEnd>
+            </AwardInfo>
+          </Award>
+        </GAEB>
+        XML);
+
+    expect($gaeb->award)->not->toBeNull()
+        ->and($gaeb->award->contractNo)->toBe('A-2026-042')
+        ->and($gaeb->award->contractDate)->toBe('2026-06-15')
+        ->and($gaeb->award->bidDate)->toBe('2026-05-04')
+        ->and($gaeb->award->constructionStart)->toBe('2026-09-01')
+        ->and($gaeb->award->constructionEnd)->toBe('2027-03-31')
+        ->and($gaeb->award->warrantyDuration)->toBe(5)
+        ->and($gaeb->award->warrantyUnit)->toBe(WarrantyUnit::Years)
+        ->and($gaeb->award->warrantyEnd)->toBe('2032-03-31');
+});
+
+it('yields null award when AwardInfo is absent and all-null fields when it is sparse', function () {
+    $none = GaebParser::fromString(<<<'XML'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA83/3.3">
+          <Award><DP>83</DP></Award>
+        </GAEB>
+        XML);
+    expect($none->award)->toBeNull();
+
+    $sparse = GaebParser::fromFile(__DIR__.'/fixtures/realistic.x84');
+    expect($sparse->award)->not->toBeNull()
+        ->and($sparse->award->contractNo)->toBeNull()
+        ->and($sparse->award->warrantyUnit)->toBeNull();
+});
+
+it('drops an unknown WarrUnit value leniently', function () {
+    $gaeb = GaebParser::fromString(<<<'XML'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <GAEB xmlns="http://www.gaeb.de/GAEB_DA_XML/DA86/3.3">
+          <Award>
+            <DP>86</DP>
+            <AwardInfo><WarrDur>24</WarrDur><WarrUnit>Weeks</WarrUnit></AwardInfo>
+          </Award>
+        </GAEB>
+        XML);
+
+    expect($gaeb->award->warrantyDuration)->toBe(24)
+        ->and($gaeb->award->warrantyUnit)->toBeNull();
 });
